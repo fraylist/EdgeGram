@@ -48,10 +48,18 @@ jobs:
 
       - name: Restore signing key
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
-          sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}/" gradle.properties
-          sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
-          sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
+            sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}/" gradle.properties
+            sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
+            sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
+          else
+            echo "No signing key secret, using the public test key from the repository"
+            cp TMessagesProj/config/release.keystore TMessagesProj/config/edgegram.keystore
+            sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=android/" gradle.properties
+            sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=androidkey/" gradle.properties
+            sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=android/" gradle.properties
+          fi
 
       - name: Build release
         run: |
