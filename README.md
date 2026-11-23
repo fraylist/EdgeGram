@@ -33,6 +33,10 @@
 - Расшифровка голосовых в текст (бесплатный ключ Groq или любой OpenAI-совместимый сервис).
 - Встроенный FAQ в приложении.
 
+## Как собрать самому
+
+Пошаговая инструкция для новичка, в том числе как собрать без установки чего-либо на компьютер: [HOW_TO_BUILD.md](HOW_TO_BUILD.md).
+
 ## Сборка
 
 Требуется JDK 17, Android SDK 36, NDK 27.2.12479018, CMake 3.22.1.
@@ -46,6 +50,10 @@ export ANDROID_HOME=/path/to/android-sdk
 Готовый APK: `TMessagesProj_App/build/outputs/apk/afat/release/app.apk`.
 
 Подпись: файл ключа в репозиторий не входит. Перед релизной сборкой положите свой `.keystore` в `TMessagesProj/config/` и укажите путь и пароли в `TMessagesProj_App/build.gradle` и `gradle.properties`. В GitHub Actions ключ подставляется из секретов репозитория.
+
+## Как собрать самому
+
+Пошаговая инструкция для новичка, в том числе как собрать без установки чего-либо на компьютер: [HOW_TO_BUILD.md](HOW_TO_BUILD.md).
 
 ## Сборка в GitHub Actions
 
