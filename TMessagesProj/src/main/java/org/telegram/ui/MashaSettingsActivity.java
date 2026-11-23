@@ -69,6 +69,7 @@ public class MashaSettingsActivity extends UniversalFragment {
     private static final int ID_MINI_AVATAR = 35;
     private static final int ID_MEDIA_PREVIEW = 36;
     private static final int ID_STICKER_SIZE = 37;
+    private static final int ID_SHOW_USER_ID = 38;
 
     private final int page;
     private PaletteView palette;
@@ -285,6 +286,8 @@ public class MashaSettingsActivity extends UniversalFragment {
         items.add(cycle(ID_TABLET, t("Tablet mode", "Планшетный режим"), tabletLabel()));
         items.add(check(ID_STICKER_TIME, t("Hide time on stickers", "Скрывать время на стикерах"),
                 t("No clock in the corner of stickers", "Без часов в углу стикеров"), MashaConfig.stickerNoTime()));
+        items.add(check(ID_SHOW_USER_ID, t("Show user ID in profile", "Показывать ID пользователя в профиле"),
+                t("Adds an item with the numeric ID to the profile menu, tap it to copy", "Добавляет в меню профиля пункт с числовым ID, нажатие копирует его"), MashaConfig.showUserId()));
         items.add(check(ID_MINI_AVATAR, t("Mini sender avatars", "Мини-аватарки отправителей"),
                 t("Small avatar next to the sender name in the chat list", "Маленький аватар рядом с именем отправителя в списке чатов"), MashaConfig.miniSenderAvatar()));
         items.add(check(ID_MEDIA_PREVIEW, t("Media preview in chat list", "Превью медиа в списке чатов"),
@@ -420,6 +423,9 @@ public class MashaSettingsActivity extends UniversalFragment {
                 break;
             case ID_DIM:
                 MashaConfig.toggle(MashaConfig.DIM_DELETED, true);
+                break;
+            case ID_SHOW_USER_ID:
+                MashaConfig.toggle(MashaConfig.SHOW_USER_ID, true);
                 break;
             case ID_LOCAL_PREMIUM:
                 MashaConfig.toggle(MashaConfig.LOCAL_PREMIUM, false);

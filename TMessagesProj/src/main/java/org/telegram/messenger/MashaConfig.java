@@ -144,6 +144,7 @@ public class MashaConfig {
     public static final String DIM_DELETED = "dimDeleted";
     public static final String LOCAL_PREMIUM = "localPremium";
     public static final String NO_COLORED_REPLIES = "noColoredReplies";
+    public static final String SHOW_USER_ID = "showUserId";
     public static final String SECRET_FREE = "secretFree";
 
     public static boolean ghostStories() { return get(GHOST_STORIES, false); }
@@ -186,6 +187,7 @@ public class MashaConfig {
     public static final String HIDE_STORIES = "hideStories";
     public static final String HIDE_PREMIUM = "hidePremium";
 
+    public static boolean showUserId() { return get(SHOW_USER_ID, true); }
     public static boolean secretFree() { return get(SECRET_FREE, true); }
     public static boolean keepTtl() { return get(KEEP_TTL, true); }
     public static boolean hidePhone() { return get(HIDE_PHONE, false); }

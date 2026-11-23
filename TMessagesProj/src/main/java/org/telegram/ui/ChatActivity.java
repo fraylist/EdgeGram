@@ -1301,6 +1301,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_STOP_LIVE_LOCATION = 118;
     public final static int OPTION_MASHA_EDITS = 119;
     public final static int OPTION_MASHA_STT = 120;
+    public final static int OPTION_MASHA_DETAILS = 121;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -31994,6 +31995,11 @@ public class ChatActivity extends BaseFragment implements
                 options.add(OPTION_MASHA_STT);
                 icons.add(R.drawable.msg_text_outlined);
             }
+            if (selectedObject != null && !suggestEdit) {
+                items.add(MashaConfig.tr("Message details", "Детали сообщения"));
+                options.add(OPTION_MASHA_DETAILS);
+                icons.add(R.drawable.msg_info);
+            }
 
             if (options.isEmpty() && optionsView == null) {
                 return false;
@@ -34337,6 +34343,10 @@ public class ChatActivity extends BaseFragment implements
             }
             case OPTION_MASHA_STT: {
                 MashaMarks.transcribe(this, selectedObject);
+                break;
+            }
+            case OPTION_MASHA_DETAILS: {
+                MashaDetails.show(this, selectedObject);
                 break;
             }
             case OPTION_RETRY: {
