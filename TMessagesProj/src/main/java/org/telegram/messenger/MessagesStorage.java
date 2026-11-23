@@ -4860,7 +4860,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void emptyMessagesMedia(long dialogId, ArrayList<Integer> mids) {
-        if (MashaConfig.keepTtl()) {
+        if (EdgeConfig.keepTtl()) {
             return;
         }
         storageQueue.postRunnable(() -> {
@@ -8005,7 +8005,7 @@ public class MessagesStorage extends BaseController {
     }
 
     /** Storage queue only: resolves dialog ids of private/group messages by their ids. */
-    public ArrayList<long[]> mashaResolveDialogs(ArrayList<Integer> mids) {
+    public ArrayList<long[]> edgeResolveDialogs(ArrayList<Integer> mids) {
         ArrayList<long[]> result = new ArrayList<>();
         SQLiteCursor cursor = null;
         try {
@@ -8024,7 +8024,7 @@ public class MessagesStorage extends BaseController {
     }
 
     /** Storage queue only. */
-    public TLRPC.Message mashaGetMessage(long dialogId, int mid) {
+    public TLRPC.Message edgeGetMessage(long dialogId, int mid) {
         return getMessageInternal(dialogId, mid);
     }
 

@@ -740,7 +740,7 @@ public class MessagesController extends BaseController implements NotificationCe
         return !starsLocked;
     }
     public boolean premiumFeaturesBlocked() {
-        if (MashaConfig.hidePremium()) {
+        if (EdgeConfig.hidePremium()) {
             return true;
         }
         return premiumLocked && !getUserConfig().isPremium();
@@ -6675,7 +6675,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
-        if (chat == null || MashaConfig.allowRestricted()) {
+        if (chat == null || EdgeConfig.allowRestricted()) {
             return false;
         }
         if (chat.migrated_to != null) {
@@ -6700,7 +6700,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isUserNoForwards(TLRPC.UserFull userFull) {
-        if (userFull == null || MashaConfig.allowRestricted()) {
+        if (userFull == null || EdgeConfig.allowRestricted()) {
             return false;
         }
 
@@ -14433,7 +14433,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     /** Ghost mode "read on action": sends the read receipt for a dialog the user just wrote to. */
-    public void mashaReadDialogNow(long dialogId) {
+    public void edgeReadDialogNow(long dialogId) {
         try {
             if (DialogObject.isEncryptedDialog(dialogId)) {
                 return;
@@ -14476,7 +14476,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     /** Sends only the "content read" receipt, leaving the local copy of the media untouched. */
-    public void mashaMarkTtlRead(MessageObject mo) {
+    public void edgeMarkTtlRead(MessageObject mo) {
         if (mo == null || mo.messageOwner == null) {
             return;
         }
@@ -17720,8 +17720,8 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void deleteMessagesByPush(long dialogId, ArrayList<Integer> ids, long channelId) {
-        if (MashaConfig.keepDeleted()) {
-            getMessagesStorage().getStorageQueue().postRunnable(() -> MashaStore.getInstance(currentAccount).onServerDeleted(dialogId, ids));
+        if (EdgeConfig.keepDeleted()) {
+            getMessagesStorage().getStorageQueue().postRunnable(() -> EdgeStore.getInstance(currentAccount).onServerDeleted(dialogId, ids));
             return;
         }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
@@ -19661,8 +19661,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     message.attachPath = "";
                 }
 
-                if (MashaConfig.keepEdits()) {
-                    MashaStore.getInstance(currentAccount).recordEdit(message);
+                if (EdgeConfig.keepEdits()) {
+                    EdgeStore.getInstance(currentAccount).recordEdit(message);
                 }
                 ImageLoader.saveMessageThumbs(message);
                 AndroidUtilities.runOnUIThread(() -> {
@@ -21301,7 +21301,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 for (int a = 0, size = deletedMessagesFinal.size(); a < size; a++) {
                     long dialogId = deletedMessagesFinal.keyAt(a);
                     ArrayList<Integer> arrayList = deletedMessagesFinal.valueAt(a);
-                    if (arrayList == null || MashaConfig.keepDeleted()) {
+                    if (arrayList == null || EdgeConfig.keepDeleted()) {
                         continue;
                     }
                     getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, arrayList, -dialogId, false);
@@ -21422,8 +21422,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 long key = deletedMessages.keyAt(a);
                 ArrayList<Integer> arrayList = deletedMessages.valueAt(a);
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                    if (MashaConfig.keepDeleted()) {
-                        MashaStore.getInstance(currentAccount).onServerDeleted(key, arrayList);
+                    if (EdgeConfig.keepDeleted()) {
+                        EdgeStore.getInstance(currentAccount).onServerDeleted(key, arrayList);
                         return;
                     }
                     ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(key, arrayList, false, true, 0, 0);
@@ -21824,7 +21824,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
-        if (MashaConfig.noAds()) {
+        if (EdgeConfig.noAds()) {
             return null;
         }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
@@ -23905,7 +23905,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean storiesEnabled() {
-        if (MashaConfig.hideStories()) {
+        if (EdgeConfig.hideStories()) {
             return false;
         }
         switch (storiesPosting) {

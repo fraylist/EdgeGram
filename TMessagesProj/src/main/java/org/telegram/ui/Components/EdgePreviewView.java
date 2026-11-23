@@ -9,11 +9,11 @@ import android.text.TextUtils;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 /** Live preview cards for the EdgeGram settings: a chat with a deleted message and a chat list row. */
-public class MashaPreviewView extends View {
+public class EdgePreviewView extends View {
 
     public static final int MODE_CHAT = 0;
     public static final int MODE_LIST = 1;
@@ -27,7 +27,7 @@ public class MashaPreviewView extends View {
     private final TextPaint markPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF r = new RectF();
 
-    public MashaPreviewView(Context context, int mode) {
+    public EdgePreviewView(Context context, int mode) {
         super(context);
         this.mode = mode;
         bold.setTypeface(AndroidUtilities.bold());
@@ -42,7 +42,7 @@ public class MashaPreviewView extends View {
     }
 
     private static String time() {
-        return MashaConfig.timeWithSeconds() ? "12:34:56" : "12:34";
+        return EdgeConfig.timeWithSeconds() ? "12:34:56" : "12:34";
     }
 
     private float dp(float v) {
@@ -77,7 +77,7 @@ public class MashaPreviewView extends View {
         final int inTimeColor = color(Theme.key_chat_inTimeText, 0xFF8E8E93);
         final int outTimeColor = color(Theme.key_chat_outTimeText, 0xFF8E8E93);
 
-        String in1 = MashaConfig.tr("This is how a usual message looks", "Так выглядит обычное сообщение");
+        String in1 = EdgeConfig.tr("This is how a usual message looks", "Так выглядит обычное сообщение");
         float inW = Math.min(w * 0.74f, text.measureText(in1) + dp(26));
         drawBubble(canvas, pad, dp(10), pad + inW, dp(54), inColor);
         text.setColor(inText);
@@ -89,7 +89,7 @@ public class MashaPreviewView extends View {
         // outgoing edited message
         final int outColor = color(Theme.key_chat_outBubble, 0xFFE3F2FD);
         final int outText = color(Theme.key_chat_messageTextOut, 0xFF000000);
-        String out1 = MashaConfig.tr("A message that was edited", "Сообщение, которое изменили");
+        String out1 = EdgeConfig.tr("A message that was edited", "Сообщение, которое изменили");
         String edited = "\u270E " + time();
         float outW = Math.min(w * 0.8f, Math.max(text.measureText(out1), small.measureText(edited)) + dp(26));
         float outRight = w - pad;
@@ -100,10 +100,10 @@ public class MashaPreviewView extends View {
         canvas.drawText(edited, outRight - dp(10) - small.measureText(edited), dp(102), small);
 
         // deleted message with the chosen mark and color
-        final int bubbleAlpha = MashaConfig.dimDeleted() ? (int) (255 * 0.65f) : 255;
-        final int textAlpha = MashaConfig.dimDeleted() ? (int) (255 * 0.75f) : 255;
-        String del = MashaConfig.tr("A message that was deleted", "Сообщение, которое удалили");
-        String mark = MashaConfig.getMarkText();
+        final int bubbleAlpha = EdgeConfig.dimDeleted() ? (int) (255 * 0.65f) : 255;
+        final int textAlpha = EdgeConfig.dimDeleted() ? (int) (255 * 0.75f) : 255;
+        String del = EdgeConfig.tr("A message that was deleted", "Сообщение, которое удалили");
+        String mark = EdgeConfig.getMarkText();
         small.setTextSize(dp(11));
         float markW = small.measureText(mark + " " + time());
         float delW = Math.min(w * 0.86f, Math.max(text.measureText(del), markW) + dp(26));
@@ -119,7 +119,7 @@ public class MashaPreviewView extends View {
         text.setAlpha(255);
 
         markPaint.setTextSize(dp(11));
-        markPaint.setColor(MashaConfig.getMarkColor());
+        markPaint.setColor(EdgeConfig.getMarkColor());
         markPaint.setAlpha(textAlpha);
         float markX = pad + delW - dp(10) - small.measureText(mark + " " + time());
         canvas.drawText(mark, markX, dp(165), markPaint);
@@ -149,25 +149,25 @@ public class MashaPreviewView extends View {
 
         bold.setTextSize(dp(15));
         bold.setColor(nameColor);
-        canvas.drawText(MashaConfig.tr("Arthur", "Артур"), pad + dp(56), dp(26), bold);
+        canvas.drawText(EdgeConfig.tr("Arthur", "Артур"), pad + dp(56), dp(26), bold);
 
         small.setTextSize(dp(12));
 
         float msgX = pad + dp(56);
-        if (MashaConfig.miniSenderAvatar()) {
+        if (EdgeConfig.miniSenderAvatar()) {
             accent.setColor(color(Theme.key_avatar_backgroundGreen, 0xFF43A047));
             canvas.drawCircle(msgX + dp(7), dp(41), dp(7), accent);
             msgX += dp(19);
         }
 
-        String sender = MashaConfig.miniSenderAvatar() ? MashaConfig.tr("Angry user: ", "Angry user: ") : "";
-        String msg = sender + MashaConfig.tr("do you really want that new UI?", "вам правда нужен новый интерфейс?");
+        String sender = EdgeConfig.miniSenderAvatar() ? EdgeConfig.tr("Angry user: ", "Angry user: ") : "";
+        String msg = sender + EdgeConfig.tr("do you really want that new UI?", "вам правда нужен новый интерфейс?");
         small.setColor(msgColor);
         float available = w - msgX - pad - dp(60);
         canvas.drawText(TextUtils.ellipsize(msg, small, available, TextUtils.TruncateAt.END).toString(), msgX, dp(46), small);
 
         // thumbnails when the media preview is on
-        if (MashaConfig.mediaPreview()) {
+        if (EdgeConfig.mediaPreview()) {
             float tx = w - pad - dp(52);
             bubble.setColor(color(Theme.key_chats_attachMessage, 0xFFDDE3EA));
             for (int i = 0; i < 2; i++) {
@@ -178,7 +178,7 @@ public class MashaPreviewView extends View {
 
         small.setColor(timeColor);
         String t = time();
-        boolean hasUnread = !MashaConfig.mediaPreview();
+        boolean hasUnread = !EdgeConfig.mediaPreview();
         float timeRight = w - pad - (hasUnread ? dp(26) : 0);
         canvas.drawText(t, timeRight - small.measureText(t), dp(26), small);
 

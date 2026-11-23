@@ -8,7 +8,7 @@
 
 package org.telegram.ui.Cells;
 
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
@@ -5738,7 +5738,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     private CharSequence addSenderAvatar(CharSequence messageNameString, MessageObject message) {
-        if (MashaConfig.miniSenderAvatar() && !TextUtils.isEmpty(messageNameString) && message != null) {
+        if (EdgeConfig.miniSenderAvatar() && !TextUtils.isEmpty(messageNameString) && message != null) {
             final long fromChatId = message.getFromChatId();
             if (fromChatId != 0 && fromChatId != UserConfig.getInstance(currentAccount).getClientUserId()) {
                 if (senderAvatarSpan == null) {
@@ -5756,7 +5756,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     public void updateMessageThumbs() {
-        if (message == null || !MashaConfig.mediaPreview()) {
+        if (message == null || !EdgeConfig.mediaPreview()) {
             thumbsCount = 0;
             return;
         }

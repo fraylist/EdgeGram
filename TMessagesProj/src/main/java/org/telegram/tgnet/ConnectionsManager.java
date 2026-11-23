@@ -420,7 +420,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
-        if (org.telegram.messenger.MashaConfig.shouldDropRequest(object)) {
+        if (org.telegram.messenger.EdgeConfig.shouldDropRequest(object)) {
             return;
         }
         if (BuildVars.LOGS_ENABLED) {

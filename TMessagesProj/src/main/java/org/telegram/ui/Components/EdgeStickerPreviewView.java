@@ -9,26 +9,26 @@ import android.graphics.RectF;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 /** Live preview of a sticker at the size chosen in the settings. */
-public class MashaStickerPreviewView extends View {
+public class EdgeStickerPreviewView extends View {
 
     private final Paint bubble = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint image = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final RectF r = new RectF();
     private Bitmap bitmap;
 
-    public MashaStickerPreviewView(Context context) {
+    public EdgeStickerPreviewView(Context context) {
         super(context);
     }
 
     private Bitmap bitmap() {
         if (bitmap == null) {
             try {
-                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.masha_sticker);
+                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.edge_sticker);
             } catch (Throwable ignore) {
             }
         }
@@ -37,7 +37,7 @@ public class MashaStickerPreviewView extends View {
 
     /** The same proportion the chat uses: 0.5 of the screen at 14 dp, growing to 24 dp. */
     private float scaleFactor() {
-        return 1f + (MashaConfig.stickerSize() - 14) / 15f;
+        return 1f + (EdgeConfig.stickerSize() - 14) / 15f;
     }
 
     @Override
@@ -67,6 +67,6 @@ public class MashaStickerPreviewView extends View {
         } catch (Throwable e) {
             text.setColor(0xFF8E8E93);
         }
-        canvas.drawText(MashaConfig.stickerSize() + " dp", w / 2f, top + side + AndroidUtilities.dp(19), text);
+        canvas.drawText(EdgeConfig.stickerSize() + " dp", w / 2f, top + side + AndroidUtilities.dp(19), text);
     }
 }

@@ -8,7 +8,7 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
@@ -13429,7 +13429,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
-        if (getUserConfig().showCallsTab || MashaConfig.hideBottomTabs()) {
+        if (getUserConfig().showCallsTab || EdgeConfig.hideBottomTabs()) {
             io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
                 presentFragment(new SettingsActivity());
             });

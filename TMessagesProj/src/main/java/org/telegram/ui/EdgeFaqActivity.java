@@ -18,7 +18,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -28,12 +28,12 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MashaPreviewView;
+import org.telegram.ui.Components.EdgePreviewView;
 
 import java.util.ArrayList;
 
 /** Hand-written FAQ for everything EdgeGram adds on top of Telegram. */
-public class MashaFaqActivity extends UniversalFragment {
+public class EdgeFaqActivity extends UniversalFragment {
 
     private static final int TYPE_SECTION = 0;
     private static final int TYPE_Q = 1;
@@ -308,7 +308,7 @@ public class MashaFaqActivity extends UniversalFragment {
         searchField = new EditText(context);
         searchField.setSingleLine(true);
         searchField.setBackground(null);
-        searchField.setHint(MashaConfig.tr("Search questions", "Поиск по вопросам"));
+        searchField.setHint(EdgeConfig.tr("Search questions", "Поиск по вопросам"));
         searchField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         searchField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         searchField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -419,29 +419,29 @@ public class MashaFaqActivity extends UniversalFragment {
 
     @Override
     protected CharSequence getTitle() {
-        return MashaConfig.tr("FAQ and help", "FAQ и помощь");
+        return EdgeConfig.tr("FAQ and help", "FAQ и помощь");
     }
 
     private static String pick(Object[] row, int indexEn, int indexRu) {
-        return MashaConfig.tr((String) row[indexEn], (String) row[indexRu]);
+        return EdgeConfig.tr((String) row[indexEn], (String) row[indexRu]);
     }
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         if (query.isEmpty()) {
-            items.add(UItem.asHeader(MashaConfig.tr("How to read this page", "Как читать эту страницу")));
-            items.add(UItem.asShadow(MashaConfig.tr(
+            items.add(UItem.asHeader(EdgeConfig.tr("How to read this page", "Как читать эту страницу")));
+            items.add(UItem.asShadow(EdgeConfig.tr(
                     "Every feature EdgeGram adds to Telegram has an answer here. Tap a question \u2014 the answer opens in a window and can be selected and copied. Use the search field above when you are looking for a specific setting.",
                     "Здесь есть ответ про каждую функцию, которую EdgeGram добавляет к Telegram. Нажмите на вопрос \u2014 ответ откроется в окне, его можно выделить и скопировать. Если ищете конкретную настройку, воспользуйтесь поиском сверху.")));
         }
         if (query.isEmpty()) {
-            items.add(UItem.asHeader(MashaConfig.tr("Contents", "Оглавление")));
+            items.add(UItem.asHeader(EdgeConfig.tr("Contents", "Оглавление")));
             for (int i = 0; i < DATA.length; i++) {
                 if ((Integer) DATA[i][0] == TYPE_SECTION) {
                     items.add(UItem.asButton(ID_TOC_BASE + i, "\u2192  " + pick(DATA[i], 1, 2)));
                 }
             }
-            items.add(UItem.asShadow(MashaConfig.tr("Tap a section to jump to it.", "Нажмите на раздел, чтобы перейти к нему.")));
+            items.add(UItem.asShadow(EdgeConfig.tr("Tap a section to jump to it.", "Нажмите на раздел, чтобы перейти к нему.")));
         }
         tocDataIndexes.clear();
         tocPositions.clear();
@@ -469,8 +469,8 @@ public class MashaFaqActivity extends UniversalFragment {
             }
         }
         if (found == 0) {
-            items.add(UItem.asHeader(MashaConfig.tr("Nothing found", "Ничего не найдено")));
-            items.add(UItem.asShadow(MashaConfig.tr(
+            items.add(UItem.asHeader(EdgeConfig.tr("Nothing found", "Ничего не найдено")));
+            items.add(UItem.asShadow(EdgeConfig.tr(
                     "Try another word, for example \u00ABdeleted\u00BB, \u00ABghost\u00BB, \u00ABsticker\u00BB or \u00ABkeys\u00BB. If the answer is really missing, send me your question and I will add it.",
                     "Попробуйте другое слово, например \u00ABудал\u00BB, \u00ABпризрак\u00BB, \u00ABстикер\u00BB или \u00ABключ\u00BB. Если ответа действительно нет, пришлите вопрос, и я его добавлю.")));
         }
@@ -515,7 +515,7 @@ public class MashaFaqActivity extends UniversalFragment {
     private static int illustrationFor(Object[] row) {
         final String en = (String) row[1];
         if (en.contains("Mini avatars") || en.contains("Where are all EdgeGram settings")) {
-            return MashaPreviewView.MODE_LIST;
+            return EdgePreviewView.MODE_LIST;
         }
         if (en.contains("saving of deleted messages")
                 || en.contains("pencil mark")
@@ -523,7 +523,7 @@ public class MashaFaqActivity extends UniversalFragment {
                 || en.contains("change the mark text")
                 || en.contains("Time with seconds")
                 || en.contains("What are previews in settings")) {
-            return MashaPreviewView.MODE_CHAT;
+            return EdgePreviewView.MODE_CHAT;
         }
         return -1;
     }
@@ -539,13 +539,13 @@ public class MashaFaqActivity extends UniversalFragment {
 
         final int illustration = illustrationFor(row);
         if (illustration >= 0) {
-            MashaPreviewView preview = new MashaPreviewView(getParentActivity(), illustration);
+            EdgePreviewView preview = new EdgePreviewView(getParentActivity(), illustration);
             preview.invalidate();
-            box.addView(preview, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(illustration == MashaPreviewView.MODE_LIST ? 90 : 186)));
+            box.addView(preview, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(illustration == EdgePreviewView.MODE_LIST ? 90 : 186)));
             TextView caption = new TextView(getParentActivity());
             caption.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             caption.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-            caption.setText(MashaConfig.tr("Illustration of how this looks in the app", "Иллюстрация: как это выглядит в приложении"));
+            caption.setText(EdgeConfig.tr("Illustration of how this looks in the app", "Иллюстрация: как это выглядит в приложении"));
             caption.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(2), AndroidUtilities.dp(22), AndroidUtilities.dp(6));
             box.addView(caption);
         }

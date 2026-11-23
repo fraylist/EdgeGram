@@ -177,8 +177,8 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MashaConfig;
-import org.telegram.messenger.MashaStore;
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeStore;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
@@ -2909,7 +2909,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
-            .add(NotificationCenter.mashaMessagesDeleted)
+            .add(NotificationCenter.edgeMessagesDeleted)
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -6865,7 +6865,7 @@ public class ChatActivity extends BaseFragment implements
                         wasManualScroll = true;
                         scrollingChatListView = true;
                     } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                        if (MashaConfig.hideKeyboardOnScroll()) {
+                        if (EdgeConfig.hideKeyboardOnScroll()) {
                             if (isKeyboardVisible()) {
                                 AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                             } else if (chatActivityEnterView != null) {
@@ -8739,7 +8739,7 @@ public class ChatActivity extends BaseFragment implements
         chatScrollHelper.setAnimationCallback(chatScrollHelperCallback);
 
         flagSecure = new FlagSecureReason(getParentActivity().getWindow(), () ->
-            (currentEncryptedChat != null && !MashaConfig.secretFree()) ||
+            (currentEncryptedChat != null && !EdgeConfig.secretFree()) ||
             isPeerNoForwards()
         );
 
@@ -16261,7 +16261,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private Runnable sendSecretMessageRead(MessageObject messageObject, boolean readNow) {
-        if (MashaConfig.keepTtl()) {
+        if (EdgeConfig.keepTtl()) {
             return null;
         }
         if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.destroyTime != 0 || messageObject.messageOwner.ttl <= 0) {
@@ -16293,7 +16293,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private Runnable sendSecretMediaDelete(MessageObject messageObject) {
-        if (MashaConfig.keepTtl() || messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.ttl != 0x7FFFFFFF) {
+        if (EdgeConfig.keepTtl() || messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.ttl != 0x7FFFFFFF) {
             return null;
         }
         final long taskId = getMessagesController().createDeleteShowOnceTask(dialog_id, messageObject.getId());
@@ -23123,7 +23123,7 @@ public class ChatActivity extends BaseFragment implements
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
             }
-        } else if (id == NotificationCenter.mashaMessagesDeleted) {
+        } else if (id == NotificationCenter.edgeMessagesDeleted) {
             long did = (Long) args[0];
             ArrayList<Integer> mids = (ArrayList<Integer>) args[1];
             if (did == dialog_id && mids != null && chatAdapter != null) {
@@ -31985,18 +31985,18 @@ public class ChatActivity extends BaseFragment implements
                 icons.add(R.drawable.msg_calendar2);
             }
 
-            if (selectedObject != null && !suggestEdit && MashaStore.getInstance(currentAccount).hasEdits(selectedObject.getDialogId(), selectedObject.getId())) {
-                items.add(MashaConfig.tr("Edit history", "История правок"));
+            if (selectedObject != null && !suggestEdit && EdgeStore.getInstance(currentAccount).hasEdits(selectedObject.getDialogId(), selectedObject.getId())) {
+                items.add(EdgeConfig.tr("Edit history", "История правок"));
                 options.add(OPTION_MASHA_EDITS);
                 icons.add(R.drawable.msg_edit);
             }
             if (selectedObject != null && !suggestEdit && selectedObject.isVoice()) {
-                items.add(MashaConfig.tr("Transcribe", "Расшифровать"));
+                items.add(EdgeConfig.tr("Transcribe", "Расшифровать"));
                 options.add(OPTION_MASHA_STT);
                 icons.add(R.drawable.msg_text_outlined);
             }
             if (selectedObject != null && !suggestEdit) {
-                items.add(MashaConfig.tr("Message details", "Детали сообщения"));
+                items.add(EdgeConfig.tr("Message details", "Детали сообщения"));
                 options.add(OPTION_MASHA_DETAILS);
                 icons.add(R.drawable.msg_info);
             }
@@ -34338,15 +34338,15 @@ public class ChatActivity extends BaseFragment implements
         boolean preserveDim = false;
         switch (option) {
             case OPTION_MASHA_EDITS: {
-                MashaMarks.showEdits(this, selectedObject);
+                EdgeMarks.showEdits(this, selectedObject);
                 break;
             }
             case OPTION_MASHA_STT: {
-                MashaMarks.transcribe(this, selectedObject);
+                EdgeMarks.transcribe(this, selectedObject);
                 break;
             }
             case OPTION_MASHA_DETAILS: {
-                MashaDetails.show(this, selectedObject);
+                EdgeDetails.show(this, selectedObject);
                 break;
             }
             case OPTION_RETRY: {
@@ -42602,7 +42602,7 @@ public class ChatActivity extends BaseFragment implements
                 cell.invalidate();
                 SecretMediaViewer.getInstance().setParentActivity(getParentActivity());
                 final MessageObject ttlMessage = message;
-                SecretMediaViewer.getInstance().setMashaRead(MashaConfig.keepTtl() && !message.isOut() ? () -> getMessagesController().mashaMarkTtlRead(ttlMessage) : null);
+                SecretMediaViewer.getInstance().setMashaRead(EdgeConfig.keepTtl() && !message.isOut() ? () -> getMessagesController().edgeMarkTtlRead(ttlMessage) : null);
                 SecretMediaViewer.getInstance().openMedia(message, photoViewerProvider, openAction, closeAction);
             } else if (MessageObject.isAnimatedEmoji(message.getDocument()) && MessageObject.getInputStickerSet(message.getDocument()) != null) {
                 final ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);

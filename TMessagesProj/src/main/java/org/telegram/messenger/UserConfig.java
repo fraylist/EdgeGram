@@ -577,7 +577,7 @@ public class UserConfig extends BaseController {
         if (user == null) {
             return false;
         }
-        if (MashaConfig.localPremium()) {
+        if (EdgeConfig.localPremium()) {
             return true;
         }
         return user.premium;

@@ -8,9 +8,9 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
@@ -587,7 +587,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int leave_group = 7;
     private final static int invite_to_group = 9;
     private final static int share = 10;
-    private final static int masha_user_id_item = 9090;
+    private final static int edge_user_id_item = 9090;
     private final static int edit_channel = 12;
     private final static int add_shortcut = 14;
     private final static int call_item = 15;
@@ -2542,7 +2542,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             flagSecure = null;
         }
         if (layout != null && layout.getParentActivity() != null) {
-            flagSecure = new FlagSecureReason(layout.getParentActivity().getWindow(), () -> (currentEncryptedChat != null && !org.telegram.messenger.MashaConfig.secretFree()) || isPeerNoForwards());
+            flagSecure = new FlagSecureReason(layout.getParentActivity().getWindow(), () -> (currentEncryptedChat != null && !org.telegram.messenger.EdgeConfig.secretFree()) || isPeerNoForwards());
         }
     }
 
@@ -2571,11 +2571,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         return;
                     }
                     finishFragment();
-                } else if (id == masha_user_id_item) {
+                } else if (id == edge_user_id_item) {
                     if (userId != 0) {
                         AndroidUtilities.addToClipboard(String.valueOf(userId));
                         org.telegram.ui.Components.BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(
-                                R.raw.copy, MashaConfig.tr("User ID copied: ", "ID пользователя скопирован: ") + userId).show();
+                                R.raw.copy, EdgeConfig.tr("User ID copied: ", "ID пользователя скопирован: ") + userId).show();
                     }
                 } else if (id == block_contact) {
                     onBlockContactClicked(false);
@@ -6145,7 +6145,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarGooey.setBlurIntensity(0f);
             avatarGooey.setGooeyEnabled(false);
             avatarGooey.setVisibility(pullUpProgress >= 1.0f ? View.GONE : View.VISIBLE);
-        } else if (!MashaConfig.gooeyAvatar()) {
+        } else if (!EdgeConfig.gooeyAvatar()) {
             avatarGooey.setAlpha(MathUtils.clamp(1f - (pullUpProgress - 0.5f) / 0.5f, 0f, 1f));
             avatarGooey.setBlurIntensity(0f);
             avatarGooey.setGooeyEnabled(false);
@@ -12587,9 +12587,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (selfUser && !myProfile) {
             otherItem.addSubItem(logout, R.drawable.msg_leave, LocaleController.getString(R.string.LogOut));
         }
-        if (MashaConfig.showUserId() && userId != 0) {
-            otherItem.addSubItem(masha_user_id_item, R.drawable.msg_info,
-                    MashaConfig.tr("ID: ", "ID: ") + userId);
+        if (EdgeConfig.showUserId() && userId != 0) {
+            otherItem.addSubItem(edge_user_id_item, R.drawable.msg_info,
+                    EdgeConfig.tr("ID: ", "ID: ") + userId);
         }
         if (!isPulledDown) {
             otherItem.hideSubItem(gallery_menu_save);

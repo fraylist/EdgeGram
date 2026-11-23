@@ -82,7 +82,7 @@ public class LocaleController {
 
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
-        if (MashaConfig.timeWithSeconds()) {
+        if (EdgeConfig.timeWithSeconds()) {
             return getFormatterDayWithSeconds();
         }
         if (formatterDay == null) {
@@ -2893,7 +2893,7 @@ public class LocaleController {
     }
 
     public static String formatShortNumber(int number, int[] rounded) {
-        if (MashaConfig.noRounding()) {
+        if (EdgeConfig.noRounding()) {
             if (rounded != null) {
                 rounded[0] = number;
             }
@@ -2964,13 +2964,13 @@ public class LocaleController {
     }
 
     public static String formatUserStatus(int currentAccount, TLRPC.User user, boolean[] isOnline, boolean[] madeShorter) {
-        if (user != null && user.status != null && user.status.expires > 0 && MashaConfig.get(MashaConfig.SAVE_LAST_SEEN, true)) {
-            MashaConfig.rememberLastSeen(user.id, Math.min(user.status.expires, ConnectionsManager.getInstance(currentAccount).getCurrentTime()));
+        if (user != null && user.status != null && user.status.expires > 0 && EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)) {
+            EdgeConfig.rememberLastSeen(user.id, Math.min(user.status.expires, ConnectionsManager.getInstance(currentAccount).getCurrentTime()));
         }
-        if (user != null && user.status != null && user.status.expires <= 0 && MashaConfig.get(MashaConfig.SAVE_LAST_SEEN, true)) {
-            int seen = MashaConfig.getLastSeen(user.id);
+        if (user != null && user.status != null && user.status.expires <= 0 && EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)) {
+            int seen = EdgeConfig.getLastSeen(user.id);
             if (seen > 0 && !MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
-                return MashaConfig.tr("approx. ", "примерно ") + formatDateOnline(seen, madeShorter);
+                return EdgeConfig.tr("approx. ", "примерно ") + formatDateOnline(seen, madeShorter);
             }
         }
         if (user != null && user.status != null && user.status.expires == 0) {

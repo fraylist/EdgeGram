@@ -7,13 +7,13 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MashaConfig;
-import org.telegram.messenger.MashaStore;
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeStore;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.Components.IconBackgroundColors;
-import org.telegram.ui.Components.MashaPreviewView;
-import org.telegram.ui.Components.MashaStickerPreviewView;
+import org.telegram.ui.Components.EdgePreviewView;
+import org.telegram.ui.Components.EdgeStickerPreviewView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -22,7 +22,7 @@ import org.telegram.ui.Components.UniversalFragment;
 import java.util.ArrayList;
 
 /** EdgeGram settings: a main page with sections and one sub-page for each section. */
-public class MashaSettingsActivity extends UniversalFragment {
+public class EdgeSettingsActivity extends UniversalFragment {
     public static final int PAGE_MAIN = 0;
     public static final int PAGE_GHOST = 1;
     public static final int PAGE_SPY = 2;
@@ -73,15 +73,15 @@ public class MashaSettingsActivity extends UniversalFragment {
 
     private final int page;
     private PaletteView palette;
-    private MashaPreviewView chatPreview;
-    private MashaPreviewView listPreview;
-    private MashaStickerPreviewView stickerPreview;
+    private EdgePreviewView chatPreview;
+    private EdgePreviewView listPreview;
+    private EdgeStickerPreviewView stickerPreview;
 
-    public MashaSettingsActivity() {
+    public EdgeSettingsActivity() {
         this(PAGE_MAIN);
     }
 
-    public MashaSettingsActivity(int page) {
+    public EdgeSettingsActivity(int page) {
         this.page = page;
     }
 
@@ -94,9 +94,9 @@ public class MashaSettingsActivity extends UniversalFragment {
     public View createView(Context context) {
         setHasOwnBackground(true);
         palette = new PaletteView(context, this::refreshViews);
-        chatPreview = new MashaPreviewView(context, MashaPreviewView.MODE_CHAT);
-        listPreview = new MashaPreviewView(context, MashaPreviewView.MODE_LIST);
-        stickerPreview = new MashaStickerPreviewView(context);
+        chatPreview = new EdgePreviewView(context, EdgePreviewView.MODE_CHAT);
+        listPreview = new EdgePreviewView(context, EdgePreviewView.MODE_LIST);
+        stickerPreview = new EdgeStickerPreviewView(context);
         fragmentView = super.createView(context);
         listView.setSections();
         listView.setSectionsDrawBackground(true);
@@ -134,7 +134,7 @@ public class MashaSettingsActivity extends UniversalFragment {
     }
 
     private static String t(String en, String ru) {
-        return MashaConfig.tr(en, ru);
+        return EdgeConfig.tr(en, ru);
     }
 
     private static UItem section(int page, IconBackgroundColors c, int icon, String title, String sub) {
@@ -202,31 +202,31 @@ public class MashaSettingsActivity extends UniversalFragment {
     private void fillGhost(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Ghost mode", "Режим призрака")));
         items.add(check(ID_GHOST_READ, t("Don't mark as read", "Не отмечать прочитанным"),
-                t("Others do not see that you read their messages", "Собеседники не видят, что вы прочитали сообщение"), MashaConfig.ghostRead()));
+                t("Others do not see that you read their messages", "Собеседники не видят, что вы прочитали сообщение"), EdgeConfig.ghostRead()));
         items.add(check(ID_GHOST_ON_ACTION, t("Read on action", "Читать при действиях"),
-                t("When you send a message, the chat is marked as read automatically", "При отправке сообщения чат автоматически отмечается прочитанным"), MashaConfig.ghostOnAction()));
+                t("When you send a message, the chat is marked as read automatically", "При отправке сообщения чат автоматически отмечается прочитанным"), EdgeConfig.ghostOnAction()));
         items.add(UItem.asShadow(null));
         items.add(check(ID_GHOST_TYPING, t("Hide typing", "Скрывать набор текста"),
-                t("The \"typing\" status is not sent", "Статус «печатает» не отправляется"), MashaConfig.ghostTyping()));
+                t("The \"typing\" status is not sent", "Статус «печатает» не отправляется"), EdgeConfig.ghostTyping()));
         items.add(check(ID_GHOST_OFFLINE, t("Always offline", "Всегда не в сети"),
-                t("Your online status is never sent", "Статус «в сети» не отправляется"), MashaConfig.ghostOffline()));
+                t("Your online status is never sent", "Статус «в сети» не отправляется"), EdgeConfig.ghostOffline()));
         items.add(check(ID_GHOST_STORIES, t("Silent stories", "Тихие истории"),
-                t("Stories are watched without a view mark", "Истории просматриваются без отметки о просмотре"), MashaConfig.ghostStories()));
+                t("Stories are watched without a view mark", "Истории просматриваются без отметки о просмотре"), EdgeConfig.ghostStories()));
         items.add(UItem.asShadow(null));
         items.add(check(ID_SEND_SILENT, t("Send without sound", "Отправлять без звука"),
-                t("All your messages are sent silently by default", "Все ваши сообщения по умолчанию уходят без звука"), MashaConfig.sendSilent()));
+                t("All your messages are sent silently by default", "Все ваши сообщения по умолчанию уходят без звука"), EdgeConfig.sendSilent()));
         items.add(UItem.asShadow(t("Without \"Read on action\" you stay unseen even after replying.", "Без «Читать при действиях» вы остаётесь непрочитавшим даже после ответа.")));
     }
 
     private void fillSpy(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Spy mode", "Режим шпиона")));
         items.add(check(ID_KEEP_DELETED, t("Keep deleted messages", "Сохранять удалённые сообщения"),
-                t("They stay in the chat with a mark", "Остаются в чате с пометкой"), MashaConfig.keepDeleted()));
+                t("They stay in the chat with a mark", "Остаются в чате с пометкой"), EdgeConfig.keepDeleted()));
         items.add(check(ID_KEEP_EDITS, t("Keep edit history", "Сохранять историю правок"),
-                t("Long-press an edited message \u2192 \"Edit history\"", "Долгое нажатие на изменённое сообщение \u2192 «История правок»"), MashaConfig.keepEdits()));
+                t("Long-press an edited message \u2192 \"Edit history\"", "Долгое нажатие на изменённое сообщение \u2192 «История правок»"), EdgeConfig.keepEdits()));
         items.add(UItem.asShadow(null));
         items.add(check(ID_LAST_SEEN, t("Keep last seen", "Сохранять последний онлайн"),
-                t("Remembers the last exact time you saw a person online and shows it as approximate when their status is hidden", "Запоминает последнее точное время, когда вы видели человека в сети, и показывает его как примерное, если статус скрыт"), MashaConfig.get(MashaConfig.SAVE_LAST_SEEN, true)));
+                t("Remembers the last exact time you saw a person online and shows it as approximate when their status is hidden", "Запоминает последнее точное время, когда вы видели человека в сети, и показывает его как примерное, если статус скрыт"), EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)));
         items.add(UItem.asShadow(null));
         items.add(UItem.asButton(ID_STATS, t("Storage", "Хранилище"), statsText()));
         items.add(UItem.asButton(ID_CLEAR, t("Clear saved history", "Очистить сохранённую историю")));
@@ -235,7 +235,7 @@ public class MashaSettingsActivity extends UniversalFragment {
 
     private String statsText() {
         try {
-            int[] st = MashaStore.getInstance(currentAccount).counts();
+            int[] st = EdgeStore.getInstance(currentAccount).counts();
             return t(st[0] + " deleted, " + st[1] + " edits", st[0] + " удалено, " + st[1] + " правок");
         } catch (Throwable e) {
             return "";
@@ -263,15 +263,15 @@ public class MashaSettingsActivity extends UniversalFragment {
 
     private void fillCustom(ArrayList<UItem> items) {
         if (chatPreview == null) {
-            chatPreview = new MashaPreviewView(getContext(), MashaPreviewView.MODE_CHAT);
+            chatPreview = new EdgePreviewView(getContext(), EdgePreviewView.MODE_CHAT);
         }
         chatPreview.invalidate();
         items.add(UItem.asHeader(t("Preview", "Превью")));
         items.add(UItem.asCustomShadow(chatPreview, 186));
         items.add(UItem.asHeader(t("Deleted messages", "Удалённые сообщения")));
         items.add(check(ID_DIM, t("Semi-transparent deleted", "Полупрозрачные удалёнки"),
-                t("Deleted messages are dimmed", "Удалённые сообщения затемняются"), MashaConfig.dimDeleted()));
-        items.add(UItem.asButton(ID_MARK_TEXT, t("Mark", "Метка удалёнок"), MashaConfig.getMarkText()));
+                t("Deleted messages are dimmed", "Удалённые сообщения затемняются"), EdgeConfig.dimDeleted()));
+        items.add(UItem.asButton(ID_MARK_TEXT, t("Mark", "Метка удалёнок"), EdgeConfig.getMarkText()));
         if (palette == null) {
             palette = new PaletteView(getContext(), this::refreshViews);
         }
@@ -280,52 +280,52 @@ public class MashaSettingsActivity extends UniversalFragment {
 
         items.add(UItem.asHeader(t("Interface", "Интерфейс")));
         items.add(check(ID_TIME_SECONDS, t("Time with seconds", "Время с секундами"),
-                t("Message time is shown as 12:34:56", "Время сообщений показывается как 12:34:56"), MashaConfig.timeWithSeconds()));
+                t("Message time is shown as 12:34:56", "Время сообщений показывается как 12:34:56"), EdgeConfig.timeWithSeconds()));
         items.add(check(ID_NO_ROUNDING, t("No number rounding", "Без сокращения чисел"),
-                t("4.8K becomes 4777", "4.8K превращается в 4777"), MashaConfig.noRounding()));
+                t("4.8K becomes 4777", "4.8K превращается в 4777"), EdgeConfig.noRounding()));
         items.add(cycle(ID_TABLET, t("Tablet mode", "Планшетный режим"), tabletLabel()));
         items.add(check(ID_STICKER_TIME, t("Hide time on stickers", "Скрывать время на стикерах"),
-                t("No clock in the corner of stickers", "Без часов в углу стикеров"), MashaConfig.stickerNoTime()));
+                t("No clock in the corner of stickers", "Без часов в углу стикеров"), EdgeConfig.stickerNoTime()));
         items.add(check(ID_SHOW_USER_ID, t("Show user ID in profile", "Показывать ID пользователя в профиле"),
-                t("Adds an item with the numeric ID to the profile menu, tap it to copy", "Добавляет в меню профиля пункт с числовым ID, нажатие копирует его"), MashaConfig.showUserId()));
+                t("Adds an item with the numeric ID to the profile menu, tap it to copy", "Добавляет в меню профиля пункт с числовым ID, нажатие копирует его"), EdgeConfig.showUserId()));
         items.add(check(ID_MINI_AVATAR, t("Mini sender avatars", "Мини-аватарки отправителей"),
-                t("Small avatar next to the sender name in the chat list", "Маленький аватар рядом с именем отправителя в списке чатов"), MashaConfig.miniSenderAvatar()));
+                t("Small avatar next to the sender name in the chat list", "Маленький аватар рядом с именем отправителя в списке чатов"), EdgeConfig.miniSenderAvatar()));
         items.add(check(ID_MEDIA_PREVIEW, t("Media preview in chat list", "Превью медиа в списке чатов"),
-                t("Show thumbnails of the last photo or video", "Показывать миниатюры последнего фото или видео"), MashaConfig.mediaPreview()));
+                t("Show thumbnails of the last photo or video", "Показывать миниатюры последнего фото или видео"), EdgeConfig.mediaPreview()));
         if (stickerPreview == null) {
-            stickerPreview = new MashaStickerPreviewView(getContext());
+            stickerPreview = new EdgeStickerPreviewView(getContext());
         }
         stickerPreview.invalidate();
         items.add(UItem.asCustomShadow(stickerPreview, 210));
-        items.add(UItem.asButton(ID_STICKER_SIZE, t("Sticker size", "Размер стикеров"), MashaConfig.stickerSize() + " dp"));
+        items.add(UItem.asButton(ID_STICKER_SIZE, t("Sticker size", "Размер стикеров"), EdgeConfig.stickerSize() + " dp"));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(t("Layout", "Раскладка")));
         items.add(check(ID_BOTTOM_TABS, t("Hide bottom tabs", "Скрыть нижние вкладки"),
-                t("The tab bar at the bottom of the chat list disappears", "Нижняя панель вкладок в списке чатов пропадает"), MashaConfig.hideBottomTabs()));
+                t("The tab bar at the bottom of the chat list disappears", "Нижняя панель вкладок в списке чатов пропадает"), EdgeConfig.hideBottomTabs()));
         items.add(check(ID_KB_SCROLL, t("Hide keyboard on scroll", "Скрывать клавиатуру при прокрутке"),
-                t("The keyboard closes when you scroll the chat", "Клавиатура закрывается при прокрутке чата"), MashaConfig.hideKeyboardOnScroll()));
+                t("The keyboard closes when you scroll the chat", "Клавиатура закрывается при прокрутке чата"), EdgeConfig.hideKeyboardOnScroll()));
         items.add(check(ID_GOOEY, t("\"Sticky\" avatar animation", "«Липкая» анимация аватара"),
-                t("Profile avatar melts into the header when you scroll", "Аватар профиля «растворяется» в шапке при прокрутке"), MashaConfig.gooeyAvatar()));
+                t("Profile avatar melts into the header when you scroll", "Аватар профиля «растворяется» в шапке при прокрутке"), EdgeConfig.gooeyAvatar()));
         items.add(check(ID_GLASS, t("Glass outlines", "Контуры стеклянных элементов"),
-                t("Thin light outline around glass panels", "Тонкая светлая обводка у стеклянных панелей"), MashaConfig.glassStroke()));
+                t("Thin light outline around glass panels", "Тонкая светлая обводка у стеклянных панелей"), EdgeConfig.glassStroke()));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(t("Useful", "Полезное")));
         items.add(check(ID_NO_ADS, t("Hide ads", "Отключить рекламу"),
-                t("Sponsored messages are not shown", "Спонсорские сообщения не показываются"), MashaConfig.noAds()));
+                t("Sponsored messages are not shown", "Спонсорские сообщения не показываются"), EdgeConfig.noAds()));
         items.add(check(ID_RESTRICTED, t("Allow saving and copying", "Разрешить сохранение и копирование"),
-                t("Works in chats with restricted content", "Работает и в чатах с запретом копирования"), MashaConfig.allowRestricted()));
+                t("Works in chats with restricted content", "Работает и в чатах с запретом копирования"), EdgeConfig.allowRestricted()));
         items.add(check(ID_LOCAL_PREMIUM, t("Local Premium", "Локальный Premium"),
-                t("Unlocks Premium interface locally. Server features still need a real subscription", "Открывает Premium-интерфейс локально. Серверные функции требуют настоящей подписки"), MashaConfig.localPremium()));
+                t("Unlocks Premium interface locally. Server features still need a real subscription", "Открывает Premium-интерфейс локально. Серверные функции требуют настоящей подписки"), EdgeConfig.localPremium()));
         items.add(UItem.asShadow(null));
     }
 
     private void openSection(int index) {
         if (index == 8) {
-            presentFragment(new MashaFaqActivity());
+            presentFragment(new EdgeFaqActivity());
         } else {
-            presentFragment(new MashaSettingsActivity(index));
+            presentFragment(new EdgeSettingsActivity(index));
         }
     }
 
@@ -334,7 +334,7 @@ public class MashaSettingsActivity extends UniversalFragment {
     }
 
     private String tabletLabel() {
-        switch (MashaConfig.tabletMode()) {
+        switch (EdgeConfig.tabletMode()) {
             case 1:
                 return t("On", "Включён");
             case 2:
@@ -347,17 +347,17 @@ public class MashaSettingsActivity extends UniversalFragment {
     private void fillSecret(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Secret chats", "Секретные чаты")));
         items.add(check(ID_SECRET, t("No limits", "Без ограничений"),
-                t("Screenshots, forwarding and saving are allowed; screenshot notices are not sent", "Скриншоты, пересылка и сохранение разрешены, уведомления о скриншотах не отправляются"), MashaConfig.secretFree()));
+                t("Screenshots, forwarding and saving are allowed; screenshot notices are not sent", "Скриншоты, пересылка и сохранение разрешены, уведомления о скриншотах не отправляются"), EdgeConfig.secretFree()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(t("Timed media", "Медиа с таймером")));
         items.add(check(ID_TTL, t("Keep timed photos and videos", "Не удалять одноразовые фото и видео"),
-                t("They stay on your device. A \"Mark as read\" button appears in the viewer", "Остаются у вас. В просмотрщике появляется кнопка «Прочитано»"), MashaConfig.keepTtl()));
+                t("They stay on your device. A \"Mark as read\" button appears in the viewer", "Остаются у вас. В просмотрщике появляется кнопка «Прочитано»"), EdgeConfig.keepTtl()));
         items.add(UItem.asShadow(t("Nothing is marked as read until you press the button, so the sender does not see that you opened it.", "Пока вы не нажмёте кнопку, отправитель не узнает, что вы открыли медиа.")));
     }
 
     private void fillLook(ArrayList<UItem> items) {
         if (listPreview == null) {
-            listPreview = new MashaPreviewView(getContext(), MashaPreviewView.MODE_LIST);
+            listPreview = new EdgePreviewView(getContext(), EdgePreviewView.MODE_LIST);
         }
         listPreview.invalidate();
         items.add(UItem.asHeader(t("Chat list preview", "Превью списка чатов")));
@@ -365,25 +365,25 @@ public class MashaSettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(t("This is how your chat list looks with the current settings.", "Так выглядит ваш список чатов с текущими настройками.")));
         items.add(UItem.asHeader(t("Privacy", "Приватность")));
         items.add(check(ID_HIDE_PHONE, t("Hide my phone number", "Скрывать мой номер телефона"),
-                t("Masks the number in settings and profile", "Скрывает номер в настройках и профиле"), MashaConfig.hidePhone()));
+                t("Masks the number in settings and profile", "Скрывает номер в настройках и профиле"), EdgeConfig.hidePhone()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(t("Interface", "Интерфейс")));
         items.add(check(ID_HIDE_STORIES, t("Hide stories", "Скрывать истории"),
-                t("Removes the stories row. Takes effect after restart", "Убирает ленту историй. Вступит в силу после перезапуска"), MashaConfig.hideStories()));
+                t("Removes the stories row. Takes effect after restart", "Убирает ленту историй. Вступит в силу после перезапуска"), EdgeConfig.hideStories()));
         items.add(check(ID_HIDE_PREMIUM, t("Hide Premium offers", "Скрывать предложения Premium"),
-                t("Removes Premium buttons and promos. Takes effect after restart", "Убирает кнопки и рекламу Premium. Вступит в силу после перезапуска"), MashaConfig.hidePremium()));
+                t("Removes Premium buttons and promos. Takes effect after restart", "Убирает кнопки и рекламу Premium. Вступит в силу после перезапуска"), EdgeConfig.hidePremium()));
         items.add(UItem.asButton(ID_APPEARANCE, t("Telegram themes and corners", "Темы и скругления Telegram")));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(t("Media", "Медиа")));
         items.add(check(ID_HD, t("Larger photos", "Фото в большем размере"),
-                t("Photos are sent in up to 2560 px. Takes effect after restart", "Фото отправляются до 2560 px. Вступит в силу после перезапуска"), MashaConfig.hdPhotos()));
+                t("Photos are sent in up to 2560 px. Takes effect after restart", "Фото отправляются до 2560 px. Вступит в силу после перезапуска"), EdgeConfig.hdPhotos()));
         items.add(UItem.asShadow(null));
     }
 
     private void fillTools(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Tools", "Инструменты")));
-        items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), MashaConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
-        items.add(UItem.asButton(ID_API_KEYS, t("API keys", "API-ключи"), MashaConfig.hasCustomApiKeys() ? t("Custom", "Свои") : t("Built-in", "Встроенные")));
+        items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), EdgeConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
+        items.add(UItem.asButton(ID_API_KEYS, t("API keys", "API-ключи"), EdgeConfig.hasCustomApiKeys() ? t("Custom", "Свои") : t("Built-in", "Встроенные")));
         items.add(UItem.asShadow(t("Up to 10 accounts can be added in the same app.", "В приложение можно добавить до 10 аккаунтов.")));
     }
 
@@ -395,85 +395,85 @@ public class MashaSettingsActivity extends UniversalFragment {
         }
         switch (item.id) {
             case ID_KEEP_DELETED:
-                MashaConfig.toggle(MashaConfig.KEEP_DELETED, true);
+                EdgeConfig.toggle(EdgeConfig.KEEP_DELETED, true);
                 break;
             case ID_KEEP_EDITS:
-                MashaConfig.toggle(MashaConfig.KEEP_EDITS, true);
+                EdgeConfig.toggle(EdgeConfig.KEEP_EDITS, true);
                 break;
             case ID_GHOST_READ:
-                MashaConfig.toggle(MashaConfig.GHOST_READ, false);
+                EdgeConfig.toggle(EdgeConfig.GHOST_READ, false);
                 break;
             case ID_GHOST_TYPING:
-                MashaConfig.toggle(MashaConfig.GHOST_TYPING, false);
+                EdgeConfig.toggle(EdgeConfig.GHOST_TYPING, false);
                 break;
             case ID_GHOST_OFFLINE:
-                MashaConfig.toggle(MashaConfig.GHOST_OFFLINE, false);
+                EdgeConfig.toggle(EdgeConfig.GHOST_OFFLINE, false);
                 break;
             case ID_GHOST_STORIES:
-                MashaConfig.toggle(MashaConfig.GHOST_STORIES, false);
+                EdgeConfig.toggle(EdgeConfig.GHOST_STORIES, false);
                 break;
             case ID_GHOST_ON_ACTION:
-                MashaConfig.toggle(MashaConfig.GHOST_ON_ACTION, true);
+                EdgeConfig.toggle(EdgeConfig.GHOST_ON_ACTION, true);
                 break;
             case ID_SEND_SILENT:
-                MashaConfig.toggle(MashaConfig.SEND_SILENT, false);
+                EdgeConfig.toggle(EdgeConfig.SEND_SILENT, false);
                 break;
             case ID_LAST_SEEN:
-                MashaConfig.toggle(MashaConfig.SAVE_LAST_SEEN, true);
+                EdgeConfig.toggle(EdgeConfig.SAVE_LAST_SEEN, true);
                 break;
             case ID_DIM:
-                MashaConfig.toggle(MashaConfig.DIM_DELETED, true);
+                EdgeConfig.toggle(EdgeConfig.DIM_DELETED, true);
                 break;
             case ID_SHOW_USER_ID:
-                MashaConfig.toggle(MashaConfig.SHOW_USER_ID, true);
+                EdgeConfig.toggle(EdgeConfig.SHOW_USER_ID, true);
                 break;
             case ID_LOCAL_PREMIUM:
-                MashaConfig.toggle(MashaConfig.LOCAL_PREMIUM, false);
+                EdgeConfig.toggle(EdgeConfig.LOCAL_PREMIUM, false);
                 break;
             case ID_RESTRICTED:
-                MashaConfig.toggle(MashaConfig.ALLOW_RESTRICTED, true);
+                EdgeConfig.toggle(EdgeConfig.ALLOW_RESTRICTED, true);
                 break;
             case ID_NO_ADS:
-                MashaConfig.toggle(MashaConfig.NO_ADS, true);
+                EdgeConfig.toggle(EdgeConfig.NO_ADS, true);
                 break;
             case ID_HD:
-                MashaConfig.toggle(MashaConfig.HD_PHOTOS, false);
+                EdgeConfig.toggle(EdgeConfig.HD_PHOTOS, false);
                 break;
             case ID_SECRET:
-                MashaConfig.toggle(MashaConfig.SECRET_FREE, true);
+                EdgeConfig.toggle(EdgeConfig.SECRET_FREE, true);
                 break;
             case ID_TTL:
-                MashaConfig.toggle(MashaConfig.KEEP_TTL, true);
+                EdgeConfig.toggle(EdgeConfig.KEEP_TTL, true);
                 break;
             case ID_HIDE_PHONE:
-                MashaConfig.toggle(MashaConfig.HIDE_PHONE, false);
+                EdgeConfig.toggle(EdgeConfig.HIDE_PHONE, false);
                 break;
             case ID_HIDE_STORIES:
-                MashaConfig.toggle(MashaConfig.HIDE_STORIES, false);
+                EdgeConfig.toggle(EdgeConfig.HIDE_STORIES, false);
                 break;
             case ID_HIDE_PREMIUM:
-                MashaConfig.toggle(MashaConfig.HIDE_PREMIUM, false);
+                EdgeConfig.toggle(EdgeConfig.HIDE_PREMIUM, false);
                 break;
             case ID_TIME_SECONDS:
-                MashaConfig.toggle(MashaConfig.TIME_SECONDS, false);
+                EdgeConfig.toggle(EdgeConfig.TIME_SECONDS, false);
                 break;
             case ID_NO_ROUNDING:
-                MashaConfig.toggle(MashaConfig.NO_ROUNDING, false);
+                EdgeConfig.toggle(EdgeConfig.NO_ROUNDING, false);
                 break;
             case ID_STICKER_TIME:
-                MashaConfig.toggle(MashaConfig.STICKER_NO_TIME, false);
+                EdgeConfig.toggle(EdgeConfig.STICKER_NO_TIME, false);
                 break;
             case ID_KB_SCROLL:
-                MashaConfig.toggle(MashaConfig.HIDE_KEYBOARD_SCROLL, false);
+                EdgeConfig.toggle(EdgeConfig.HIDE_KEYBOARD_SCROLL, false);
                 break;
             case ID_GLASS:
-                MashaConfig.toggle(MashaConfig.GLASS_STROKE, true);
+                EdgeConfig.toggle(EdgeConfig.GLASS_STROKE, true);
                 break;
             case ID_GOOEY:
-                MashaConfig.toggle(MashaConfig.GOOEY_AVATAR, true);
+                EdgeConfig.toggle(EdgeConfig.GOOEY_AVATAR, true);
                 break;
             case ID_BOTTOM_TABS: {
-                final boolean nowHidden = MashaConfig.toggle(MashaConfig.HIDE_BOTTOM_TABS, false);
+                final boolean nowHidden = EdgeConfig.toggle(EdgeConfig.HIDE_BOTTOM_TABS, false);
                 if (nowHidden && getParentActivity() != null) {
                     org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(R.raw.info,
                             t("To bring the tabs back: menu \u22EE on the chat list \u2192 Settings", "Вернуть вкладки: меню \u22EE в списке чатов \u2192 Настройки")).show();
@@ -481,29 +481,29 @@ public class MashaSettingsActivity extends UniversalFragment {
                 break;
             }
             case ID_MINI_AVATAR:
-                MashaConfig.toggle(MashaConfig.MINI_SENDER_AVATAR, false);
+                EdgeConfig.toggle(EdgeConfig.MINI_SENDER_AVATAR, false);
                 break;
             case ID_MEDIA_PREVIEW:
-                MashaConfig.toggle(MashaConfig.MEDIA_PREVIEW, true);
+                EdgeConfig.toggle(EdgeConfig.MEDIA_PREVIEW, true);
                 break;
             case ID_TABLET: {
-                int m = MashaConfig.tabletMode();
+                int m = EdgeConfig.tabletMode();
                 m = (m + 1) % 3;
-                MashaConfig.setTabletMode(m);
+                EdgeConfig.setTabletMode(m);
                 android.widget.Toast.makeText(getParentActivity(), t("Restart the app to apply", "Перезапустите приложение, чтобы применить"), android.widget.Toast.LENGTH_SHORT).show();
                 break;
             }
             case ID_STICKER_SIZE:
-                MashaMarks.showStickerSizeDialog(this, this::refreshViews);
+                EdgeMarks.showStickerSizeDialog(this, this::refreshViews);
                 return;
             case ID_MARK_TEXT:
-                MashaMarks.showMarkTextDialog(this, this::refreshViews);
+                EdgeMarks.showMarkTextDialog(this, this::refreshViews);
                 return;
             case ID_STT:
-                MashaMarks.showSttKeyDialog(this);
+                EdgeMarks.showSttKeyDialog(this);
                 return;
             case ID_API_KEYS:
-                MashaMarks.showApiKeyDialog(this, false);
+                EdgeMarks.showApiKeyDialog(this, false);
                 return;
             case ID_APPEARANCE:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
@@ -516,7 +516,7 @@ public class MashaSettingsActivity extends UniversalFragment {
                 b.setTitle(t("Clear saved history?", "Очистить сохранённую историю?"));
                 b.setMessage(t("Marks of deleted messages and the edit history will be removed from this device.", "Метки удалённых сообщений и история правок будут удалены с этого устройства."));
                 b.setPositiveButton(t("Clear", "Очистить"), (d, w) -> {
-                    MashaStore.getInstance(currentAccount).clearAll();
+                    EdgeStore.getInstance(currentAccount).clearAll();
                     refreshViews();
                 });
                 b.setNegativeButton(org.telegram.messenger.LocaleController.getString(R.string.Cancel), null);
@@ -537,8 +537,8 @@ public class MashaSettingsActivity extends UniversalFragment {
     private static class PaletteView extends View {
         private final Runnable onChanged;
         private static final int[] COLORS = {
-                MashaConfig.COLOR_RED, 0xFFFF7043, 0xFFFFB300, 0xFF43A047,
-                MashaConfig.COLOR_BLUE, 0xFF7E57C2, MashaConfig.COLOR_PINK, 0xFF8E9AA8
+                EdgeConfig.COLOR_RED, 0xFFFF7043, 0xFFFFB300, 0xFF43A047,
+                EdgeConfig.COLOR_BLUE, 0xFF7E57C2, EdgeConfig.COLOR_PINK, 0xFF8E9AA8
         };
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -557,7 +557,7 @@ public class MashaSettingsActivity extends UniversalFragment {
             int count = COLORS.length;
             float cell = (w - AndroidUtilities.dp(32)) / (float) count;
             float r = Math.min(cell / 2f - AndroidUtilities.dp(4), AndroidUtilities.dp(22));
-            int selected = MashaConfig.getMarkColor();
+            int selected = EdgeConfig.getMarkColor();
             for (int i = 0; i < count; i++) {
                 float cx = AndroidUtilities.dp(16) + cell * i + cell / 2f;
                 paint.setColor(COLORS[i]);
@@ -576,7 +576,7 @@ public class MashaSettingsActivity extends UniversalFragment {
                 float cell = (getWidth() - AndroidUtilities.dp(32)) / (float) count;
                 int i = (int) ((e.getX() - AndroidUtilities.dp(16)) / cell);
                 if (i >= 0 && i < count) {
-                    MashaConfig.setMarkColor(COLORS[i]);
+                    EdgeConfig.setMarkColor(COLORS[i]);
                     invalidate();
                     if (onChanged != null) {
                         onChanged.run();

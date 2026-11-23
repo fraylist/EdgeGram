@@ -882,30 +882,30 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         secretDeleteTimer = new SecretDeleteTimer(activity);
         containerView.addView(secretDeleteTimer, LayoutHelper.createFrame(119, 48, Gravity.TOP | Gravity.RIGHT, 0, 0, 0, 0));
 
-        mashaReadButton = new TextView(activity);
-        mashaReadButton.setText(mashaReadLabel());
-        mashaReadButton.setTextColor(0xFFFFFFFF);
-        mashaReadButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
-        mashaReadButton.setTypeface(AndroidUtilities.bold());
-        mashaReadButton.setGravity(Gravity.CENTER);
-        mashaReadButton.setPadding(dp(22), 0, dp(22), 0);
-        android.graphics.drawable.GradientDrawable mashaBg = new android.graphics.drawable.GradientDrawable();
-        mashaBg.setColor(0xDD2A7BDE);
-        mashaBg.setCornerRadius(dp(22));
-        mashaReadButton.setBackground(mashaBg);
-        mashaReadButton.setVisibility(View.GONE);
-        mashaReadButton.setOnClickListener(v -> {
-            if (mashaRead == null) {
+        edgeReadButton = new TextView(activity);
+        edgeReadButton.setText(edgeReadLabel());
+        edgeReadButton.setTextColor(0xFFFFFFFF);
+        edgeReadButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+        edgeReadButton.setTypeface(AndroidUtilities.bold());
+        edgeReadButton.setGravity(Gravity.CENTER);
+        edgeReadButton.setPadding(dp(22), 0, dp(22), 0);
+        android.graphics.drawable.GradientDrawable edgeBg = new android.graphics.drawable.GradientDrawable();
+        edgeBg.setColor(0xDD2A7BDE);
+        edgeBg.setCornerRadius(dp(22));
+        edgeReadButton.setBackground(edgeBg);
+        edgeReadButton.setVisibility(View.GONE);
+        edgeReadButton.setOnClickListener(v -> {
+            if (edgeRead == null) {
                 return;
             }
-            Runnable r = mashaRead;
-            mashaRead = null;
+            Runnable r = edgeRead;
+            edgeRead = null;
             r.run();
-            mashaReadButton.setText("\u2713  " + org.telegram.messenger.MashaConfig.tr("Marked as read", "Отмечено прочитанным"));
-            mashaReadButton.setClickable(false);
-            mashaReadButton.animate().alpha(0f).setStartDelay(1400).setDuration(300).withEndAction(() -> mashaReadButton.setVisibility(View.GONE)).start();
+            edgeReadButton.setText("\u2713  " + org.telegram.messenger.EdgeConfig.tr("Marked as read", "Отмечено прочитанным"));
+            edgeReadButton.setClickable(false);
+            edgeReadButton.animate().alpha(0f).setStartDelay(1400).setDuration(300).withEndAction(() -> edgeReadButton.setVisibility(View.GONE)).start();
         });
-        containerView.addView(mashaReadButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 96));
+        containerView.addView(edgeReadButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 96));
 
         final VideoPlayerSeekBar.SeekBarDelegate seekBarDelegate = new VideoPlayerSeekBar.SeekBarDelegate() {
             @Override
@@ -990,7 +990,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-        if (!org.telegram.messenger.MashaConfig.secretFree()) {
+        if (!org.telegram.messenger.EdgeConfig.secretFree()) {
             windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
             AndroidUtilities.logFlagSecure();
         }
@@ -1395,15 +1395,15 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private boolean wasLightNavigationBar;
 
     private Runnable onClose;
-    private Runnable mashaRead;
-    private TextView mashaReadButton;
+    private Runnable edgeRead;
+    private TextView edgeReadButton;
 
     public void setMashaRead(Runnable r) {
-        this.mashaRead = r;
+        this.edgeRead = r;
     }
 
-    private String mashaReadLabel() {
-        return "\uD83D\uDC41  " + org.telegram.messenger.MashaConfig.tr("Mark as read", "Прочитано");
+    private String edgeReadLabel() {
+        return "\uD83D\uDC41  " + org.telegram.messenger.EdgeConfig.tr("Mark as read", "Прочитано");
     }
     private boolean ignoreDelete;
 
@@ -1420,12 +1420,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         ignoreDelete = messageObject.messageOwner.ttl == 0x7FFFFFFF;
         this.onClose = onClose;
-        if (mashaReadButton != null) {
-            mashaReadButton.animate().cancel();
-            mashaReadButton.setAlpha(1f);
-            mashaReadButton.setClickable(true);
-            mashaReadButton.setText(mashaReadLabel());
-            mashaReadButton.setVisibility(mashaRead != null ? View.VISIBLE : View.GONE);
+        if (edgeReadButton != null) {
+            edgeReadButton.animate().cancel();
+            edgeReadButton.setAlpha(1f);
+            edgeReadButton.setClickable(true);
+            edgeReadButton.setText(edgeReadLabel());
+            edgeReadButton.setVisibility(edgeRead != null ? View.VISIBLE : View.GONE);
         }
 
         currentProvider = provider;

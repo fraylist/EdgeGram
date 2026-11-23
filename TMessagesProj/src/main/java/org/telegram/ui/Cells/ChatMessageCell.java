@@ -8,8 +8,8 @@
 
 package org.telegram.ui.Cells;
 
-import org.telegram.messenger.MashaConfig;
-import org.telegram.ui.MashaMarks;
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.ui.EdgeMarks;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
@@ -8997,8 +8997,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     float maxHeight;
                     int maxWidth;
-                    final float stickerScale = 0.4f + (MashaConfig.stickerSize() - 14.0f) / 40f;
-                    final float stickerScalePhone = 0.5f + (MashaConfig.stickerSize() - 14.0f) / 30f;
+                    final float stickerScale = 0.4f + (EdgeConfig.stickerSize() - 14.0f) / 40f;
+                    final float stickerScalePhone = 0.5f + (EdgeConfig.stickerSize() - 14.0f) / 30f;
                     if (AndroidUtilities.isTablet()) {
                         maxHeight = maxWidth = (int) (AndroidUtilities.getMinTabletSide() * stickerScale);
                     } else {
@@ -15660,7 +15660,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
         timeString = timeString(currentMessageObject, messageObject, edited, currentMessagesGroup != null ? currentMessagesGroup.getMaxEditDate() : messageObject.messageOwner.edit_date);
-        timeString = MashaMarks.decorate(currentAccount, messageObject, timeString);
+        timeString = EdgeMarks.decorate(currentAccount, messageObject, timeString);
         if (currentMessageObject.messageOwner.video_processing_pending) {
             timeString = formatString(R.string.ScheduledTimeApprox, timeString);
         }
@@ -15704,8 +15704,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
             }
         }
-        currentTimeString = MashaMarks.colorize(currentAccount, currentMessageObject, currentTimeString);
-        setAlpha(MashaConfig.dimDeleted() && MashaMarks.isDeleted(currentAccount, currentMessageObject) ? 0.6f : 1f);
+        currentTimeString = EdgeMarks.colorize(currentAccount, currentMessageObject, currentTimeString);
+        setAlpha(EdgeConfig.dimDeleted() && EdgeMarks.isDeleted(currentAccount, currentMessageObject) ? 0.6f : 1f);
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
         if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {
             timeWidth -= dp(8);
@@ -21287,7 +21287,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public void drawTime(Canvas canvas, float alpha, boolean fromParent) {
-        if (MashaConfig.stickerNoTime() && currentMessageObject != null && currentMessageObject.isAnyKindOfSticker() && !isDrawSelectionBackground()) {
+        if (EdgeConfig.stickerNoTime() && currentMessageObject != null && currentMessageObject.isAnyKindOfSticker() && !isDrawSelectionBackground()) {
             return;
         }
         if (!drawFromPinchToZoom && delegate != null && delegate.getPinchToZoomHelper() != null && delegate.getPinchToZoomHelper().isInOverlayModeFor(this) && shouldDrawTimeOnMedia()) {

@@ -10,7 +10,7 @@ import org.telegram.tgnet.tl.TL_account;
 import java.util.Locale;
 
 /** EdgeGram feature switches. */
-public class MashaConfig {
+public class EdgeConfig {
     private static SharedPreferences prefs;
 
     private static SharedPreferences p() {

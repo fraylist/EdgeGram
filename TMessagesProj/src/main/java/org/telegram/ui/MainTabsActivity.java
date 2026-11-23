@@ -1,6 +1,6 @@
 package org.telegram.ui;
 
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -1095,7 +1095,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkUi_tabsPosition() {
-        if (MashaConfig.hideBottomTabs()) {
+        if (EdgeConfig.hideBottomTabs()) {
             tabsViewWrapper.setVisibility(View.GONE);
             return;
         }

@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /** Local history of messages deleted by the other side and of message edits. One database per account. */
-public class MashaStore {
+public class EdgeStore {
 
     public static class Edit {
         public int date;
@@ -21,12 +21,12 @@ public class MashaStore {
         public String newText;
     }
 
-    private static final MashaStore[] instances = new MashaStore[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final EdgeStore[] instances = new EdgeStore[UserConfig.MAX_ACCOUNT_COUNT];
 
-    public static MashaStore getInstance(int account) {
+    public static EdgeStore getInstance(int account) {
         synchronized (instances) {
             if (instances[account] == null) {
-                instances[account] = new MashaStore(account);
+                instances[account] = new EdgeStore(account);
             }
             return instances[account];
         }
@@ -55,7 +55,7 @@ public class MashaStore {
     private final HashMap<Long, HashSet<Integer>> deleted = new HashMap<>();
     private final HashSet<String> edited = new HashSet<>();
 
-    private MashaStore(int account) {
+    private EdgeStore(int account) {
         this.account = account;
     }
 
@@ -118,7 +118,7 @@ public class MashaStore {
                     pairs.add(new long[]{key, mids.get(i)});
                 }
             } else {
-                pairs = MessagesStorage.getInstance(account).mashaResolveDialogs(mids);
+                pairs = MessagesStorage.getInstance(account).edgeResolveDialogs(mids);
             }
             if (pairs.isEmpty()) {
                 return;
@@ -151,7 +151,7 @@ public class MashaStore {
             }
             AndroidUtilities.runOnUIThread(() -> {
                 for (HashMap.Entry<Long, ArrayList<Integer>> e : byDialog.entrySet()) {
-                    NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.mashaMessagesDeleted, e.getKey(), e.getValue());
+                    NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.edgeMessagesDeleted, e.getKey(), e.getValue());
                 }
             });
         } catch (Throwable e) {
@@ -170,7 +170,7 @@ public class MashaStore {
         final int editDate = message.edit_date != 0 ? message.edit_date : (int) (System.currentTimeMillis() / 1000);
         MessagesStorage.getInstance(account).getStorageQueue().postRunnable(() -> {
             try {
-                TLRPC.Message old = MessagesStorage.getInstance(account).mashaGetMessage(dialogId, mid);
+                TLRPC.Message old = MessagesStorage.getInstance(account).edgeGetMessage(dialogId, mid);
                 if (old == null || old.message == null || old.message.equals(newText)) {
                     return;
                 }

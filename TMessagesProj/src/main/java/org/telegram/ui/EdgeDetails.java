@@ -12,7 +12,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MashaConfig;
+import org.telegram.messenger.EdgeConfig;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 /** Message details: ids, exact dates, sender and who read it. */
-public class MashaDetails {
+public class EdgeDetails {
 
     private static String dateText(int date) {
         if (date == 0) {
@@ -139,7 +139,7 @@ public class MashaDetails {
             readers.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             readers.setTextColor(Theme.getColor(Theme.key_dialogTextBlue));
             readers.setPadding(0, AndroidUtilities.dp(12), 0, 0);
-            readers.setText(MashaConfig.tr("Show who read ↓", "Показать, кто прочитал ↓"));
+            readers.setText(EdgeConfig.tr("Show who read ↓", "Показать, кто прочитал ↓"));
             readers.setTypeface(AndroidUtilities.bold());
             final LinearLayout list = new LinearLayout(context);
             list.setOrientation(LinearLayout.VERTICAL);
@@ -155,12 +155,12 @@ public class MashaDetails {
         scroll.addView(box);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(MashaConfig.tr("Message details", "Детали сообщения"));
+        builder.setTitle(EdgeConfig.tr("Message details", "Детали сообщения"));
         builder.setView(scroll);
         builder.setPositiveButton(LocaleController.getString(R.string.Close), null);
-        builder.setNeutralButton(MashaConfig.tr("Copy", "Копировать"), (d, w) -> {
+        builder.setNeutralButton(EdgeConfig.tr("Copy", "Копировать"), (d, w) -> {
             AndroidUtilities.addToClipboard(dump);
-            android.widget.Toast.makeText(context, MashaConfig.tr("Copied", "Скопировано"), android.widget.Toast.LENGTH_SHORT).show();
+            android.widget.Toast.makeText(context, EdgeConfig.tr("Copied", "Скопировано"), android.widget.Toast.LENGTH_SHORT).show();
         });
         fragment.showDialog(builder.create());
     }
@@ -185,7 +185,7 @@ public class MashaDetails {
             }
             if (!(response instanceof Vector)) {
                 TextView tv = value(context);
-                tv.setText(MashaConfig.tr("Read receipts are not available for this chat", "В этом чате нельзя узнать, кто прочитал"));
+                tv.setText(EdgeConfig.tr("Read receipts are not available for this chat", "В этом чате нельзя узнать, кто прочитал"));
                 list.addView(tv);
                 return;
             }
@@ -197,7 +197,7 @@ public class MashaDetails {
             }
             if (rows.isEmpty()) {
                 TextView tv = value(context);
-                tv.setText(MashaConfig.tr("Nobody read it yet", "Пока никто не прочитал"));
+                tv.setText(EdgeConfig.tr("Nobody read it yet", "Пока никто не прочитал"));
                 list.addView(tv);
                 return;
             }
