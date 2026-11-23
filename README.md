@@ -51,10 +51,6 @@ export ANDROID_HOME=/path/to/android-sdk
 
 Подпись: файл ключа в репозиторий не входит. Перед релизной сборкой положите свой `.keystore` в `TMessagesProj/config/` и укажите путь и пароли в `TMessagesProj_App/build.gradle` и `gradle.properties`. В GitHub Actions ключ подставляется из секретов репозитория.
 
-## Как собрать самому
-
-Пошаговая инструкция для новичка, в том числе как собрать без установки чего-либо на компьютер: [HOW_TO_BUILD.md](HOW_TO_BUILD.md).
-
 ## Сборка в GitHub Actions
 
 Workflow `.github/workflows/build.yml` собирает arm64 release-APK по кнопке (вкладка Actions → Build APK → Run workflow) и по тегам `v*`.
