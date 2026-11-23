@@ -34,7 +34,7 @@ public class EdgeStore {
 
     private static class Helper extends SQLiteOpenHelper {
         Helper(Context context, int account) {
-            super(context, "mashagram_" + account + ".db", null, 1);
+            super(context, "edgegram_" + account + ".db", null, 1);
         }
 
         @Override

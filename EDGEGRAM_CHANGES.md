@@ -27,8 +27,8 @@
 **Настройки и ключи**
 - `BuildVars.java` — вписаны `APP_ID` и `APP_HASH`.
 - `ApplicationLoader.java` — `MashaConfig.applyApiKeys()` при старте.
-- `gradle.properties`, `TMessagesProj_App/build.gradle` — подпись EdgeGram, суффикс пакета `.mashagram`.
-- `TMessagesProj_App/google-services.json` — добавлен клиент для пакета `org.telegram.messenger.mashagram`.
+- `gradle.properties`, `TMessagesProj_App/build.gradle` — подпись EdgeGram, суффикс пакета `.edgegram`.
+- `TMessagesProj_App/google-services.json` — добавлен клиент для пакета `org.telegram.messenger.edgegram`.
 
 **Удалённые сообщения и правки**
 - `MessagesController.java` — не удалять сообщения при `updateDeleteMessages` (и при push-удалении), запись правок в `MashaStore`, `mashaReadDialogNow` и `mashaMarkTtlRead`.

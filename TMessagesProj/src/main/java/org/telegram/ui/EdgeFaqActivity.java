@@ -54,8 +54,8 @@ public class EdgeFaqActivity extends UniversalFragment {
             {TYPE_Q,
                     "Do I lose my chats if I install it over Telegram?",
                     "Пропадут ли мои чаты, если поставить поверх Telegram?",
-                    "No. EdgeGram is a separate app with its own package name (org.telegram.messenger.mashagram), so it does not replace Telegram. You sign in again in EdgeGram and the message history comes from the server. Updates of EdgeGram install over the old EdgeGram, and your local settings and saved history stay.",
-                    "Нет. EdgeGram \u2014 отдельное приложение со своим пакетом (org.telegram.messenger.mashagram), обычный Telegram оно не заменяет. В EdgeGram вы входите заново, и история сообщений подтягивается с сервера. Обновления EdgeGram ставятся поверх старой версии, локальные настройки и сохранённая история при этом остаются."},
+                    "No. EdgeGram is a separate app with its own package name (org.telegram.messenger.edgegram), so it does not replace Telegram. You sign in again in EdgeGram and the message history comes from the server. Updates of EdgeGram install over the old EdgeGram, and your local settings and saved history stay.",
+                    "Нет. EdgeGram \u2014 отдельное приложение со своим пакетом (org.telegram.messenger.edgegram), обычный Telegram оно не заменяет. В EdgeGram вы входите заново, и история сообщений подтягивается с сервера. Обновления EdgeGram ставятся поверх старой версии, локальные настройки и сохранённая история при этом остаются."},
 
             {TYPE_SECTION, "Deleted messages and edits", "Удалённые сообщения и правки"},
             {TYPE_Q,

@@ -70,13 +70,13 @@ android {
 
     buildTypes {
         release {
-            applicationIdSuffix ".mashagram"
+            applicationIdSuffix ".edgegram"
         }
         debug {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".mashagram"
+            applicationIdSuffix ".edgegram"
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true

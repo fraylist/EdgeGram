@@ -15,7 +15,7 @@ public class EdgeConfig {
 
     private static SharedPreferences p() {
         if (prefs == null) {
-            prefs = ApplicationLoader.applicationContext.getSharedPreferences("mashagram", Context.MODE_PRIVATE);
+            prefs = ApplicationLoader.applicationContext.getSharedPreferences("edgegram", Context.MODE_PRIVATE);
         }
         return prefs;
     }
