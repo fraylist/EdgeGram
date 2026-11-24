@@ -75,7 +75,9 @@ jobs:
       - name: Build release
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatRelease --no-daemon --stacktrace
+          ABI="${{ github.event.inputs.abi }}"
+          if [ "$ABI" = "all" ]; then ABIS="armeabi-v7a,arm64-v8a,x86,x86_64"; else ABIS="arm64-v8a"; fi
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=$ABIS --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
