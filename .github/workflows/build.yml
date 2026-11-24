@@ -2,20 +2,13 @@ name: Build APK
 
 on:
   workflow_dispatch:
-    inputs:
-      abi:
-        description: "ABI to build"
-        required: true
-        default: arm64-v8a
-        type: choice
-        options: [arm64-v8a, all]
   push:
     tags: ["v*"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
     permissions:
       contents: write
     steps:
@@ -72,18 +65,23 @@ jobs:
             sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=android/" gradle.properties
           fi
 
-      - name: Build release
+      - name: Build arm64
         run: |
           chmod +x gradlew
-          ABI="${{ github.event.inputs.abi }}"
-          if [ "$ABI" = "all" ]; then ABIS="armeabi-v7a,arm64-v8a,x86,x86_64"; else ABIS="arm64-v8a"; fi
-          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=$ABIS --no-daemon --stacktrace
+          mkdir -p out
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=arm64-v8a --no-daemon --stacktrace
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-arm64.apk"
 
-      - name: Upload APK
+      - name: Build universal
+        run: |
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=armeabi-v7a,arm64-v8a,x86,x86_64 --no-daemon --stacktrace
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-universal.apk"
+
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: EdgeGram-release
-          path: TMessagesProj_App/build/outputs/apk/afat/release/*.apk
+          name: EdgeGram-${{ github.ref_name }}
+          path: out/*.apk
           if-no-files-found: error
 
       - name: Publish release
@@ -91,5 +89,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: EdgeGram ${{ github.ref_name }}
-          files: TMessagesProj_App/build/outputs/apk/afat/release/*.apk
+          files: out/*.apk
           fail_on_unmatched_files: true
