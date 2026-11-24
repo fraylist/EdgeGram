@@ -34,18 +34,24 @@ public class EdgeStore {
 
     private static class Helper extends SQLiteOpenHelper {
         Helper(Context context, int account) {
-            super(context, "edgegram_" + account + ".db", null, 1);
+            super(context, "edgegram_" + account + ".db", null, 2);
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL("CREATE TABLE IF NOT EXISTS deleted(uid INTEGER, mid INTEGER, date INTEGER, PRIMARY KEY(uid, mid))");
+            db.execSQL("CREATE TABLE IF NOT EXISTS deleted(uid INTEGER, mid INTEGER, date INTEGER, text TEXT, PRIMARY KEY(uid, mid))");
             db.execSQL("CREATE TABLE IF NOT EXISTS edits(uid INTEGER, mid INTEGER, date INTEGER, old_text TEXT, new_text TEXT)");
             db.execSQL("CREATE INDEX IF NOT EXISTS edits_idx ON edits(uid, mid)");
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            if (oldVersion < 2) {
+                try {
+                    db.execSQL("ALTER TABLE deleted ADD COLUMN text TEXT");
+                } catch (Throwable ignore) {
+                }
+            }
         }
     }
 
@@ -135,7 +141,18 @@ public class EdgeStore {
                         cv.put("uid", pair[0]);
                         cv.put("mid", pair[1]);
                         cv.put("date", now);
-                        d.insertWithOnConflict("deleted", null, cv, SQLiteDatabase.CONFLICT_IGNORE);
+                        String text = null;
+                        try {
+                            TLRPC.Message m = MessagesStorage.getInstance(account).edgeGetMessage(pair[0], (int) pair[1]);
+                            if (m != null && m.message != null) {
+                                text = m.message.length() > 500 ? m.message.substring(0, 500) : m.message;
+                            }
+                        } catch (Throwable ignore) {
+                        }
+                        if (text != null) {
+                            cv.put("text", text);
+                        }
+                        d.insertWithOnConflict("deleted", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
                         addDeletedToCache(pair[0], (int) pair[1]);
                         ArrayList<Integer> list = byDialog.get(pair[0]);
                         if (list == null) {
@@ -189,6 +206,120 @@ public class EdgeStore {
                 FileLog.e(e);
             }
         });
+    }
+
+    public static class Hit {
+        public int kind; // 0 - deleted, 1 - edit
+        public long uid;
+        public int mid;
+        public int date;
+        public String text;
+        public String oldText;
+    }
+
+    private static String mediaLabel(TLRPC.Message m) {
+        try {
+            if (m.media instanceof TLRPC.TL_messageMediaPhoto) {
+                return EdgeConfig.tr("photo", "фото");
+            }
+            if (m.media instanceof TLRPC.TL_messageMediaDocument) {
+                return EdgeConfig.tr("file", "файл");
+            }
+            if (m.media instanceof TLRPC.TL_messageMediaGeo || m.media instanceof TLRPC.TL_messageMediaVenue) {
+                return EdgeConfig.tr("location", "геометка");
+            }
+            if (m.media instanceof TLRPC.TL_messageMediaContact) {
+                return EdgeConfig.tr("contact", "контакт");
+            }
+            if (m.media instanceof TLRPC.TL_messageMediaPoll) {
+                return EdgeConfig.tr("poll", "опрос");
+            }
+            if (m.action != null) {
+                return EdgeConfig.tr("service message", "служебное");
+            }
+        } catch (Throwable ignore) {
+        }
+        return EdgeConfig.tr("no text", "без текста");
+    }
+
+    /** mode: 0 both, 1 deleted only, 2 edits only. Runs off the UI thread; may read the message database. */
+    public ArrayList<Hit> search(String query, int mode, int limit) {
+        final String q = query == null ? "" : query.trim();
+        final String like = "%" + q.replace("'", "''") + "%";
+        final ArrayList<Hit> out = new ArrayList<>();
+        ensureLoaded();
+        try {
+            if (mode != 2) {
+                Cursor c;
+                if (q.isEmpty()) {
+                    c = db().rawQuery("SELECT uid, mid, date, text FROM deleted ORDER BY date DESC LIMIT " + limit, null);
+                } else {
+                    c = db().rawQuery("SELECT uid, mid, date, text FROM deleted WHERE text LIKE ? ORDER BY date DESC LIMIT " + limit, new String[]{like});
+                }
+                while (c.moveToNext()) {
+                    Hit h = new Hit();
+                    h.kind = 0;
+                    h.uid = c.getLong(0);
+                    h.mid = c.getInt(1);
+                    h.date = c.getInt(2);
+                    h.text = c.isNull(3) ? null : c.getString(3);
+                    out.add(h);
+                }
+                c.close();
+            }
+            if (mode != 1) {
+                Cursor c;
+                if (q.isEmpty()) {
+                    c = db().rawQuery("SELECT uid, mid, date, old_text, new_text FROM edits ORDER BY date DESC LIMIT " + limit, null);
+                } else {
+                    c = db().rawQuery("SELECT uid, mid, date, old_text, new_text FROM edits WHERE new_text LIKE ? OR old_text LIKE ? ORDER BY date DESC LIMIT " + limit, new String[]{like, like});
+                }
+                while (c.moveToNext()) {
+                    Hit h = new Hit();
+                    h.kind = 1;
+                    h.uid = c.getLong(0);
+                    h.mid = c.getInt(1);
+                    h.date = c.getInt(2);
+                    h.oldText = c.isNull(3) ? null : c.getString(3);
+                    h.text = c.isNull(4) ? null : c.getString(4);
+                    out.add(h);
+                }
+                c.close();
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+        // fill missing texts of older rows from the message database, then sort newest first
+        for (Hit h : out) {
+            if (h.text != null && !h.text.isEmpty()) {
+                continue;
+            }
+            try {
+                TLRPC.Message m = MessagesStorage.getInstance(account).edgeGetMessage(h.uid, h.mid);
+                if (m == null) {
+                    continue;
+                }
+                if (m.date != 0) {
+                    h.date = m.date;
+                }
+                if (m.message != null && !m.message.isEmpty()) {
+                    h.text = m.message;
+                    if (h.kind == 0) {
+                        ContentValues cv = new ContentValues();
+                        cv.put("text", h.text.length() > 500 ? h.text.substring(0, 500) : h.text);
+                        db().update("deleted", cv, "uid = ? AND mid = ?", new String[]{String.valueOf(h.uid), String.valueOf(h.mid)});
+                    }
+                } else {
+                    h.text = mediaLabel(m);
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+        java.util.Collections.sort(out, (a, b) -> Integer.compare(b.date, a.date));
+        if (out.size() > limit) {
+            return new ArrayList<>(out.subList(0, limit));
+        }
+        return out;
     }
 
     /** {deleted count, edits count} */

@@ -157,6 +157,11 @@ public class EdgeFaqActivity extends UniversalFragment {
 
             {TYPE_SECTION, "Spy mode", "Режим шпиона"},
             {TYPE_Q,
+                    "Where can I search everything that was hidden from me?",
+                    "Где искать всё, что от меня скрыли?",
+                    "Settings \u2192 EdgeGram \u2192 Spy mode \u2192 \u00ABWhat was hidden from me\u00BB. There is a search field on top and a switch Everything / Deleted / Edited. Results show the chat, the time of the message and its text, and an edit also shows what the text was before. Tap a result and the chat opens right at that message, where the deleted message is still visible with its mark.",
+                    "Настройки \u2192 EdgeGram \u2192 Режим шпиона \u2192 \u00ABСкрытое от меня\u00BB. Сверху поле поиска и переключатель Всё / Удалённые / Правки. В результатах видно чат, время сообщения и текст, а для правки \u2014 ещё и каким текст был раньше. Нажмите на результат \u2014 откроется чат на этом сообщении, и удалённое сообщение будет видно с меткой."},
+            {TYPE_Q,
                     "What is \u00ABKeep last seen\u00BB?",
                     "Что такое \u00ABСохранять последний онлайн\u00BB?",
                     "When you see a person online, EdgeGram remembers that exact time locally. If their status is hidden, the profile then shows \u00ABapprox. yesterday 21:14\u00BB instead of the vague \u00ABlast seen recently\u00BB. It only uses what your own app has seen; it does not break anyone's privacy settings and works only for people you actually caught online at least once.",

@@ -77,6 +77,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_APP_SETTINGS = 42;
     private static final int ID_NOTIF_CHANNELS = 43;
     private static final int ID_SPEED_BOOST = 44;
+    private static final int ID_HIDDEN_SEARCH = 45;
 
     private final int page;
     private PaletteView palette;
@@ -241,6 +242,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(check(ID_LAST_SEEN, t("Keep last seen", "Сохранять последний онлайн"),
                 t("Remembers the last exact time you saw a person online and shows it as approximate when their status is hidden", "Запоминает последнее точное время, когда вы видели человека в сети, и показывает его как примерное, если статус скрыт"), EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)));
         items.add(UItem.asShadow(null));
+        items.add(UItem.asButton(ID_HIDDEN_SEARCH, t("What was hidden from me", "Скрытое от меня"), t("Search", "Поиск")));
         items.add(UItem.asButton(ID_STATS, t("Storage", "Хранилище"), statsText()));
         items.add(UItem.asButton(ID_CLEAR, t("Clear saved history", "Очистить сохранённую историю")));
         items.add(UItem.asShadow(t("Only messages already loaded on this device can be kept. Clearing removes the \"deleted\" marks and edit history.", "Сохраняются только сообщения, уже загруженные на это устройство. Очистка убирает метки «удалено» и историю правок.")));
@@ -589,6 +591,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case ID_SPEED_BOOST:
                 EdgeConfig.cycleSpeedBoost();
                 break;
+            case ID_HIDDEN_SEARCH:
+                presentFragment(new EdgeHiddenActivity());
+                return;
             case ID_STICKER_SIZE:
                 EdgeMarks.showStickerSizeDialog(this, this::refreshViews);
                 return;
