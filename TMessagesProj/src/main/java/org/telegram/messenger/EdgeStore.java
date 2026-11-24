@@ -164,7 +164,7 @@ public class EdgeStore {
         if (message == null || message.message == null) {
             return;
         }
-        final long dialogId = message.dialog_id;
+        final long dialogId = MessageObject.getDialogId(message);
         final int mid = message.id;
         final String newText = message.message;
         final int editDate = message.edit_date != 0 ? message.edit_date : (int) (System.currentTimeMillis() / 1000);

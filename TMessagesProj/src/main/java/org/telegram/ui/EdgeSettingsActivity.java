@@ -30,6 +30,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     public static final int PAGE_SECRET = 4;
     public static final int PAGE_LOOK = 5;
     public static final int PAGE_TOOLS = 6;
+    public static final int PAGE_NOTIFY = 9;
 
     private static final int ID_OPEN_BASE = 100;
 
@@ -70,6 +71,10 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_MEDIA_PREVIEW = 36;
     private static final int ID_STICKER_SIZE = 37;
     private static final int ID_SHOW_USER_ID = 38;
+    private static final int ID_NOTIF_PERM = 40;
+    private static final int ID_BATTERY = 41;
+    private static final int ID_APP_SETTINGS = 42;
+    private static final int ID_NOTIF_CHANNELS = 43;
 
     private final int page;
     private PaletteView palette;
@@ -128,6 +133,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 return t("Look and privacy", "Вид и приватность");
             case PAGE_TOOLS:
                 return t("Tools", "Инструменты");
+            case PAGE_NOTIFY:
+                return t("Notifications and background", "Уведомления и фон");
             default:
                 return "EdgeGram";
         }
@@ -165,6 +172,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 break;
             case PAGE_TOOLS:
                 fillTools(items);
+                break;
+            case PAGE_NOTIFY:
+                fillNotify(items);
                 break;
             default:
                 fillMain(items);
@@ -321,6 +331,44 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(null));
     }
 
+    private void openNotificationSettings() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        try {
+            android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getParentActivity().getPackageName());
+            getParentActivity().startActivity(intent);
+        } catch (Throwable e) {
+            openAppDetails();
+        }
+    }
+
+    private void openAppDetails() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        try {
+            android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(android.net.Uri.parse("package:" + getParentActivity().getPackageName()));
+            getParentActivity().startActivity(intent);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private void requestIgnoreBattery() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        try {
+            android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(android.net.Uri.parse("package:" + getParentActivity().getPackageName()));
+            getParentActivity().startActivity(intent);
+        } catch (Throwable e) {
+            openAppDetails();
+        }
+    }
+
     private void openSection(int index) {
         if (index == 8) {
             presentFragment(new EdgeFaqActivity());
@@ -380,10 +428,37 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(null));
     }
 
+    private void fillNotify(ArrayList<UItem> items) {
+        final android.content.Context ctx = getContext();
+        final boolean notifGranted = ctx != null && androidx.core.content.ContextCompat.checkSelfPermission(ctx,
+                android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        boolean batteryOk = true;
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) ctx.getSystemService(android.content.Context.POWER_SERVICE);
+            batteryOk = pm != null && pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
+        } catch (Throwable ignore) {
+        }
+
+        items.add(UItem.asHeader(t("State", "Состояние")));
+        items.add(UItem.asButton(ID_NOTIF_PERM, t("Notifications", "Уведомления"),
+                notifGranted ? t("Granted", "Разрешено") : t("Denied — tap to fix", "Запрещено — нажмите, чтобы исправить")));
+        items.add(UItem.asButton(ID_BATTERY, t("Background work", "Работа в фоне"),
+                batteryOk ? t("Allowed", "Разрешена") : t("Restricted — tap to allow", "Ограничена — нажмите, чтобы разрешить")));
+        items.add(UItem.asButton(ID_APP_SETTINGS, t("Open app settings", "Открыть настройки приложения")));
+        items.add(UItem.asShadow(t("If notifications do not arrive while the app is closed, the phone is killing it. Open the app settings and allow: Autostart (Автозапуск), Run in background (Работа в фоне), and remove battery restrictions.",
+                "Если уведомления не приходят при закрытом приложении, телефон его убивает. Откройте настройки приложения и разрешите: «Автозапуск», «Работа в фоне», и снимите ограничения батареи.")));
+
+        items.add(UItem.asHeader(t("Channels", "Каналы")));
+        items.add(UItem.asButton(ID_NOTIF_CHANNELS, t("Notification channels", "Каналы уведомлений")));
+        items.add(UItem.asShadow(t("Turn on the channels you need: messages, groups, channels, calls.",
+                "Включите нужные каналы: сообщения, группы, каналы, звонки.")));
+    }
+
     private void fillTools(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Tools", "Инструменты")));
         items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), EdgeConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
         items.add(UItem.asButton(ID_API_KEYS, t("API keys", "API-ключи"), EdgeConfig.hasCustomApiKeys() ? t("Custom", "Свои") : t("Built-in", "Встроенные")));
+        items.add(UItem.asButton(ID_OPEN_BASE + PAGE_NOTIFY, t("Notifications", "Уведомления"), t("Check", "Проверить")));
         items.add(UItem.asShadow(t("Up to 10 accounts can be added in the same app.", "В приложение можно добавить до 10 аккаунтов.")));
     }
 
@@ -504,6 +579,18 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 return;
             case ID_API_KEYS:
                 EdgeMarks.showApiKeyDialog(this, false);
+                return;
+            case ID_NOTIF_PERM:
+                openNotificationSettings();
+                return;
+            case ID_BATTERY:
+                requestIgnoreBattery();
+                return;
+            case ID_APP_SETTINGS:
+                openAppDetails();
+                return;
+            case ID_NOTIF_CHANNELS:
+                openNotificationSettings();
                 return;
             case ID_APPEARANCE:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
