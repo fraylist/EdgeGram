@@ -75,6 +75,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_BATTERY = 41;
     private static final int ID_APP_SETTINGS = 42;
     private static final int ID_NOTIF_CHANNELS = 43;
+    private static final int ID_SPEED_BOOST = 44;
 
     private final int page;
     private PaletteView palette;
@@ -308,6 +309,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
         stickerPreview.invalidate();
         items.add(UItem.asCustomShadow(stickerPreview, 210));
         items.add(UItem.asButton(ID_STICKER_SIZE, t("Sticker size", "Размер стикеров"), EdgeConfig.stickerSize() + " dp"));
+        items.add(UItem.asButton(ID_SPEED_BOOST, t("Download speed", "Скорость загрузки"), EdgeConfig.speedBoostName()));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(t("Layout", "Раскладка")));
@@ -568,6 +570,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 android.widget.Toast.makeText(getParentActivity(), t("Restart the app to apply", "Перезапустите приложение, чтобы применить"), android.widget.Toast.LENGTH_SHORT).show();
                 break;
             }
+            case ID_SPEED_BOOST:
+                EdgeConfig.cycleSpeedBoost();
+                break;
             case ID_STICKER_SIZE:
                 EdgeMarks.showStickerSizeDialog(this, this::refreshViews);
                 return;

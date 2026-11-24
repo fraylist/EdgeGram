@@ -1710,6 +1710,7 @@ public class ChatActivity extends BaseFragment implements
 
 
     private final static int view_as_topics = 59;
+    private final static int chat_menu_edge_download = 2001;
 
     private final static int search = 40;
 
@@ -3744,6 +3745,8 @@ public class ChatActivity extends BaseFragment implements
                             finishFragment();
                         }
                     }
+                } else if (id == chat_menu_edge_download) {
+                    EdgeDownloader.show(ChatActivity.this, messages);
                 } else if (id == view_as_topics) {
                     if (getUserConfig().getClientUserId() == dialog_id) {
                         getMessagesController().setSavedViewAs(true);
@@ -4297,6 +4300,7 @@ public class ChatActivity extends BaseFragment implements
             });
             otherIcon.addView(headerItem.getIconView());
             headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            headerItem.lazilyAddSubItem(chat_menu_edge_download, R.drawable.msg_download, EdgeConfig.tr("Download everything", "Скачать всё из чата"));
 
             if (currentUser != null && currentUser.self && chatMode != MODE_SAVED) {
                 savedChatsItem = headerItem.lazilyAddSubItem(view_as_topics, R.drawable.msg_topics, LocaleController.getString(R.string.SavedViewAsChats));
@@ -4477,6 +4481,7 @@ public class ChatActivity extends BaseFragment implements
             updateTopicsPanelItem();
             otherIcon.addView(headerItem.getIconView());
             headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            headerItem.lazilyAddSubItem(chat_menu_edge_download, R.drawable.msg_download, EdgeConfig.tr("Download everything", "Скачать всё из чата"));
 
             headerItem.lazilyAddSubItem(copy_business_link, R.drawable.msg_copy, getString(R.string.Copy));
             headerItem.lazilyAddSubItem(share_business_link, R.drawable.msg_share, getString(R.string.LinkActionShare));

@@ -144,6 +144,7 @@ public class EdgeConfig {
     public static final String DIM_DELETED = "dimDeleted";
     public static final String LOCAL_PREMIUM = "localPremium";
     public static final String NO_COLORED_REPLIES = "noColoredReplies";
+    public static final String SPEED_BOOST = "speedBoost";
     public static final String SHOW_USER_ID = "showUserId";
     public static final String SECRET_FREE = "secretFree";
 
@@ -186,6 +187,26 @@ public class EdgeConfig {
     public static final String HIDE_PHONE = "hidePhone";
     public static final String HIDE_STORIES = "hideStories";
     public static final String HIDE_PREMIUM = "hidePremium";
+
+    public static int speedBoost() {
+        try {
+            return p().getInt(SPEED_BOOST, 0);
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
+
+    public static void cycleSpeedBoost() {
+        int v = (speedBoost() + 1) % 3;
+        try {
+            p().edit().putInt(SPEED_BOOST, v).apply();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    public static String speedBoostName() {
+        return speedBoost() == 2 ? tr("Maximum", "Максимальная") : speedBoost() == 1 ? tr("Fast", "Быстрая") : tr("Normal", "Обычная");
+    }
 
     public static boolean showUserId() { return get(SHOW_USER_ID, true); }
     public static boolean secretFree() { return get(SECRET_FREE, true); }
