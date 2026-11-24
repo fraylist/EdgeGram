@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
@@ -99,7 +100,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
     @Override
     public View createView(Context context) {
         setHasOwnBackground(true);
-        palette = new PaletteView(context, this::refreshViews);
+        palette = new PaletteView(context, this::refreshPreviewsOnly,
+                () -> EdgeMarks.showColorPicker(this, this::refreshPreviewsOnly, this::refreshViews));
         chatPreview = new EdgePreviewView(context, EdgePreviewView.MODE_CHAT);
         listPreview = new EdgePreviewView(context, EdgePreviewView.MODE_LIST);
         stickerPreview = new EdgeStickerPreviewView(context);
@@ -272,6 +274,19 @@ public class EdgeSettingsActivity extends UniversalFragment {
         }
     }
 
+    /** Repaints only the preview widgets, without rebuilding the whole list. */
+    private void refreshPreviewsOnly() {
+        if (chatPreview != null) {
+            chatPreview.invalidate();
+        }
+        if (listPreview != null) {
+            listPreview.invalidate();
+        }
+        if (palette != null) {
+            palette.invalidate();
+        }
+    }
+
     private void fillCustom(ArrayList<UItem> items) {
         if (chatPreview == null) {
             chatPreview = new EdgePreviewView(getContext(), EdgePreviewView.MODE_CHAT);
@@ -284,7 +299,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 t("Deleted messages are dimmed", "Удалённые сообщения затемняются"), EdgeConfig.dimDeleted()));
         items.add(UItem.asButton(ID_MARK_TEXT, t("Mark", "Метка удалёнок"), EdgeConfig.getMarkText()));
         if (palette == null) {
-            palette = new PaletteView(getContext(), this::refreshViews);
+            palette = new PaletteView(getContext(), this::refreshPreviewsOnly,
+                    () -> EdgeMarks.showColorPicker(this, this::refreshPreviewsOnly, this::refreshViews));
         }
         items.add(UItem.asCustom(palette, 70));
         items.add(UItem.asShadow(t("Pick a color for the mark. You can set any text or an emoji, e.g. a trash can.", "Выберите цвет метки. Текст можно задать любой, в том числе смайлик, например мусорное ведро.")));
@@ -625,54 +641,93 @@ public class EdgeSettingsActivity extends UniversalFragment {
         return false;
     }
 
-    /** Row of color circles for the deleted mark. */
+    /** Preset colors plus a wheel that opens the full HSV picker. */
     private static class PaletteView extends View {
         private final Runnable onChanged;
+        private final Runnable onPick;
         private static final int[] COLORS = {
                 EdgeConfig.COLOR_RED, 0xFFFF7043, 0xFFFFB300, 0xFF43A047,
-                EdgeConfig.COLOR_BLUE, 0xFF7E57C2, EdgeConfig.COLOR_PINK, 0xFF8E9AA8
+                EdgeConfig.COLOR_BLUE, 0xFF7E57C2, EdgeConfig.COLOR_PINK
         };
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        PaletteView(Context context, Runnable onChanged) {
+        PaletteView(Context context, Runnable onChanged, Runnable onPick) {
             super(context);
             this.onChanged = onChanged;
+            this.onPick = onPick;
             ring.setStyle(Paint.Style.STROKE);
             ring.setStrokeWidth(AndroidUtilities.dp(3));
         }
 
+        private int count() {
+            return COLORS.length + 1;
+        }
+
+        private float cell() {
+            return (getWidth() - AndroidUtilities.dp(32)) / (float) count();
+        }
+
+        private float cx(int i) {
+            return AndroidUtilities.dp(16) + cell() * i + cell() / 2f;
+        }
+
         @Override
         protected void onDraw(Canvas canvas) {
-            int w = getWidth();
-            int h = getHeight();
-            int count = COLORS.length;
-            float cell = (w - AndroidUtilities.dp(32)) / (float) count;
-            float r = Math.min(cell / 2f - AndroidUtilities.dp(4), AndroidUtilities.dp(22));
-            int selected = EdgeConfig.getMarkColor();
-            for (int i = 0; i < count; i++) {
-                float cx = AndroidUtilities.dp(16) + cell * i + cell / 2f;
+            final int w = getWidth();
+            final int h = getHeight();
+            final float cell = cell();
+            final float r = Math.min(cell / 2f - AndroidUtilities.dp(3), AndroidUtilities.dp(21));
+            final int selected = EdgeConfig.getMarkColor();
+            boolean selectedIsPreset = false;
+            for (int i = 0; i < COLORS.length; i++) {
+                float x = cx(i);
                 paint.setColor(COLORS[i]);
-                canvas.drawCircle(cx, h / 2f, r, paint);
+                canvas.drawCircle(x, h / 2f, r, paint);
                 if (COLORS[i] == selected) {
+                    selectedIsPreset = true;
                     ring.setColor(0xFFFFFFFF);
-                    canvas.drawCircle(cx, h / 2f, r + AndroidUtilities.dp(4), ring);
+                    canvas.drawCircle(x, h / 2f, r + AndroidUtilities.dp(4), ring);
                 }
+            }
+            // the wheel: any color
+            final float x = cx(COLORS.length);
+            int[] sweep = new int[]{
+                    Color.HSVToColor(new float[]{0, 1, 1}),
+                    Color.HSVToColor(new float[]{90, 1, 1}),
+                    Color.HSVToColor(new float[]{180, 1, 1}),
+                    Color.HSVToColor(new float[]{270, 1, 1}),
+                    Color.HSVToColor(new float[]{360, 1, 1})
+            };
+            paint.setShader(new android.graphics.SweepGradient(x, h / 2f, sweep, null));
+            canvas.drawCircle(x, h / 2f, r, paint);
+            paint.setShader(null);
+            paint.setColor(0xCC000000);
+            canvas.drawCircle(x, h / 2f, r * 0.52f, paint);
+            paint.setColor(0xFFFFFFFF);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(AndroidUtilities.dp(2.2f));
+            canvas.drawLine(x - r * 0.26f, h / 2f, x + r * 0.26f, h / 2f, paint);
+            canvas.drawLine(x, h / 2f - r * 0.26f, x, h / 2f + r * 0.26f, paint);
+            paint.setStyle(Paint.Style.FILL);
+            if (!selectedIsPreset) {
+                ring.setColor(0xFFFFFFFF);
+                canvas.drawCircle(x, h / 2f, r + AndroidUtilities.dp(4), ring);
             }
         }
 
         @Override
         public boolean onTouchEvent(MotionEvent e) {
             if (e.getAction() == MotionEvent.ACTION_UP) {
-                int count = COLORS.length;
-                float cell = (getWidth() - AndroidUtilities.dp(32)) / (float) count;
-                int i = (int) ((e.getX() - AndroidUtilities.dp(16)) / cell);
-                if (i >= 0 && i < count) {
+                int i = (int) ((e.getX() - AndroidUtilities.dp(16)) / cell());
+                if (i >= 0 && i < COLORS.length) {
                     EdgeConfig.setMarkColor(COLORS[i]);
                     invalidate();
                     if (onChanged != null) {
                         onChanged.run();
                     }
+                } else if (i == COLORS.length && onPick != null) {
+                    onPick.run();
                 }
             }
             return true;

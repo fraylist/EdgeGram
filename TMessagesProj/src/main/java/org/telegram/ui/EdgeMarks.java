@@ -146,6 +146,51 @@ public class EdgeMarks {
         fragment.showDialog(builder.create());
     }
 
+    /** Full HSV picker: any hue, saturation and brightness. */
+    public static void showColorPicker(BaseFragment fragment, Runnable onChange, Runnable onDone) {
+        if (fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        final android.content.Context context = fragment.getParentActivity();
+        final org.telegram.ui.Components.EdgeColorPickerView picker = new org.telegram.ui.Components.EdgeColorPickerView(context);
+        picker.setColor(EdgeConfig.getMarkColor());
+        picker.setOnColorChanged(color -> {
+            EdgeConfig.setMarkColor(color);
+            if (onChange != null) {
+                onChange.run();
+            }
+        });
+        LinearLayout box = new LinearLayout(context);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(6), AndroidUtilities.dp(18), 0);
+        box.addView(picker, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(300)));
+        TextView hint = new TextView(context);
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        hint.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        hint.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4), 0);
+        hint.setText(EdgeConfig.tr("Drag the square for shade and brightness, the bar for hue.",
+                "Квадрат — оттенок и яркость, полоса — сам цвет."));
+        box.addView(hint);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(EdgeConfig.tr("Mark color", "Цвет метки"));
+        builder.setView(box);
+        builder.setPositiveButton(LocaleController.getString(org.telegram.messenger.R.string.Done), null);
+        builder.setNeutralButton(EdgeConfig.tr("Reset", "Сброс"), (d, w) -> {
+            EdgeConfig.setMarkColor(EdgeConfig.COLOR_RED);
+            if (onChange != null) {
+                onChange.run();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setOnDismissListener(d -> {
+            if (onDone != null) {
+                onDone.run();
+            }
+        });
+        fragment.showDialog(dialog);
+    }
+
     public static void showMarkColorDialog(BaseFragment fragment, Runnable onChanged) {
         final Context context = fragment.getParentActivity();
         if (context == null) {
