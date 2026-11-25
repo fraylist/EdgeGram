@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeKeepAliveService;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -417,6 +420,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         instance = this;
         ApplicationLoader.postInitApplication();
+        if (EdgeConfig.keepAlive()) {
+            EdgeKeepAliveService.start(this);
+        }
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
         if (BuildVars.DEBUG_VERSION || BuildVars.DEBUG_PRIVATE_VERSION) {

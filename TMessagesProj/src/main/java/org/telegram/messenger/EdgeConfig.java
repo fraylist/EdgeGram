@@ -144,6 +144,7 @@ public class EdgeConfig {
     public static final String DIM_DELETED = "dimDeleted";
     public static final String LOCAL_PREMIUM = "localPremium";
     public static final String NO_COLORED_REPLIES = "noColoredReplies";
+    public static final String KEEP_ALIVE = "keepAlive";
     public static final String SPEED_BOOST = "speedBoost";
     public static final String SHOW_USER_ID = "showUserId";
     public static final String SECRET_FREE = "secretFree";
@@ -207,6 +208,8 @@ public class EdgeConfig {
     public static String speedBoostName() {
         return speedBoost() == 2 ? tr("Maximum", "Максимальная") : speedBoost() == 1 ? tr("Fast", "Быстрая") : tr("Normal", "Обычная");
     }
+
+    public static boolean keepAlive() { return get(KEEP_ALIVE, true); }
 
     public static boolean showUserId() { return get(SHOW_USER_ID, true); }
     public static boolean secretFree() { return get(SECRET_FREE, true); }
@@ -290,7 +293,12 @@ public class EdgeConfig {
     }
 
     public static void applyApiKeys() {
+        // The build-time key must win: Telegram only accepts push registration for apps it knows
+        // (APP_PUSH_APIKEY_MISSING otherwise), so a custom key silently kills notifications.
         try {
+            if (BuildVars.APP_ID == 4) {
+                return;
+            }
             int id = p().getInt("apiId", 0);
             String hash = p().getString("apiHash", "");
             if (id > 0 && hash != null && hash.length() == 32) {

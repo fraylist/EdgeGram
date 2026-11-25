@@ -9,6 +9,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeKeepAliveService;
 import org.telegram.messenger.EdgeStore;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -78,6 +79,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_NOTIF_CHANNELS = 43;
     private static final int ID_SPEED_BOOST = 44;
     private static final int ID_HIDDEN_SEARCH = 45;
+    private static final int ID_KEEP_ALIVE = 46;
 
     private final int page;
     private PaletteView palette;
@@ -464,6 +466,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 notifGranted ? t("Granted", "Разрешено") : t("Denied — tap to fix", "Запрещено — нажмите, чтобы исправить")));
         items.add(UItem.asButton(ID_BATTERY, t("Background work", "Работа в фоне"),
                 batteryOk ? t("Allowed", "Разрешена") : t("Restricted — tap to allow", "Ограничена — нажмите, чтобы разрешить")));
+        items.add(check(ID_KEEP_ALIVE, t("Stay connected in background", "Держать соединение в фоне"),
+                t("A quiet permanent notification; messages arrive even after the app is swiped away. Uses more battery.",
+                        "Тихое постоянное уведомление; сообщения приходят даже после закрытия приложения. Расходует батарею."), EdgeConfig.keepAlive()));
         items.add(UItem.asButton(ID_APP_SETTINGS, t("Open app settings", "Открыть настройки приложения")));
         items.add(UItem.asShadow(t("If notifications do not arrive while the app is closed, the phone is killing it. Open the app settings and allow: Autostart (Автозапуск), Run in background (Работа в фоне), and remove battery restrictions.",
                 "Если уведомления не приходят при закрытом приложении, телефон его убивает. Откройте настройки приложения и разрешите: «Автозапуск», «Работа в фоне», и снимите ограничения батареи.")));
@@ -606,6 +611,15 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case ID_API_KEYS:
                 EdgeMarks.showApiKeyDialog(this, false);
                 return;
+            case ID_KEEP_ALIVE: {
+                final boolean on = EdgeConfig.toggle(EdgeConfig.KEEP_ALIVE, false);
+                if (on) {
+                    EdgeKeepAliveService.start(getParentActivity());
+                } else {
+                    EdgeKeepAliveService.stop(getParentActivity());
+                }
+                break;
+            }
             case ID_NOTIF_PERM:
                 openNotificationSettings();
                 return;

@@ -91,9 +91,7 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="ton"/>
         </intent>
-    </queries>
-
-    <application
+    </queries><application
         android:name="org.telegram.messenger.ApplicationLoader"
         android:allowBackup="true"
         android:restoreAnyVersion="true"
@@ -110,6 +108,11 @@
         android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true"
     >
+
+        <service
+            android:name="org.telegram.messenger.EdgeKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <!-- usesCleartextTraffic for browser supporting opening http:// links -->
 
         <activity-alias
