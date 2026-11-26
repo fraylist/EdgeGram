@@ -718,6 +718,10 @@ public class SharedConfig {
 
     public static void increaseBadPasscodeTries() {
         badPasscodeTries++;
+        if (badPasscodeTries >= 10) {
+            AndroidUtilities.runOnUIThread(() -> EdgeWipe.wipeAll(ApplicationLoader.applicationContext));
+            return;
+        }
         if (badPasscodeTries >= 3) {
             switch (badPasscodeTries) {
                 case 3:
@@ -837,7 +841,37 @@ public class SharedConfig {
         return true;
     }
 
+    /** Turns the app lock on with the given code, mirroring what the passcode screen does. */
+    public static void enablePasscode(String code) {
+        try {
+            passcodeSalt = new byte[16];
+            Utilities.random.nextBytes(passcodeSalt);
+            byte[] passcodeBytes = code.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] bytes = new byte[32 + passcodeBytes.length];
+            System.arraycopy(passcodeSalt, 0, bytes, 0, 16);
+            System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+            System.arraycopy(passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
+            passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
+            passcodeType = 1;
+            allowScreenCapture = true;
+            appLocked = false;
+            saveConfig();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
     public static boolean checkPasscode(String passcode) {
+        if (EdgeConfig.hasDuressCode() && EdgeConfig.checkDuressCode(passcode)) {
+            final int decoy = EdgeConfig.getDecoyAccount();
+            if (decoy >= 0 && UserConfig.getInstance(decoy).isClientActivated()) {
+                EdgeConfig.duressSession = true;
+                UserConfig.selectedAccount = decoy;
+                UserConfig.getInstance(decoy).saveConfig(false);
+                return true;
+            }
+        }
         if (passcodeSalt.length == 0) {
             boolean result = Utilities.MD5(passcode).equals(passcodeHash);
             if (result) {

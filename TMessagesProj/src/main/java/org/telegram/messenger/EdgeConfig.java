@@ -145,6 +145,12 @@ public class EdgeConfig {
     public static final String LOCAL_PREMIUM = "localPremium";
     public static final String NO_COLORED_REPLIES = "noColoredReplies";
     public static final String KEEP_ALIVE = "keepAlive";
+    public static final String SNOWFLAKES = "snowflakes";
+    public static final String IOS_PANEL = "iosPanel";
+    public static final String HIDDEN_PREFIX = "hidden_acc_";
+    public static final String DECOY_ACCOUNT = "decoyAccount";
+    public static final String DURESS_HASH = "duressHash";
+    public static final String DURESS_SALT = "duressSalt";
     public static final String SPEED_BOOST = "speedBoost";
     public static final String SHOW_USER_ID = "showUserId";
     public static final String SECRET_FREE = "secretFree";
@@ -210,6 +216,88 @@ public class EdgeConfig {
     }
 
     public static boolean keepAlive() { return get(KEEP_ALIVE, true); }
+
+    public static boolean snowflakes() { return get(SNOWFLAKES, false); }
+
+    public static boolean iosPanel() { return get(IOS_PANEL, false); }
+
+    /** True while the app was opened with the hidden mode code. Not persisted on purpose. */
+    public static boolean duressSession;
+
+    /** True when this account must stay silent: hidden, or not the decoy while in hidden mode. */
+    public static boolean isAccountSilent(int account) {
+        if (duressSession) {
+            return account != getDecoyAccount();
+        }
+        return isAccountHidden(account);
+    }
+
+    public static boolean isAccountVisibleInSwitcher(int account) {
+        if (duressSession) {
+            return account == getDecoyAccount();
+        }
+        return !isAccountHidden(account);
+    }
+
+    /** Hidden accounts are not listed in the switcher and never raise notifications. */
+    public static boolean isAccountHidden(int account) {
+        return get(HIDDEN_PREFIX + account, false);
+    }
+
+    public static void setAccountHidden(int account, boolean hidden) {
+        set(HIDDEN_PREFIX + account, hidden);
+    }
+
+    public static int getDecoyAccount() {
+        try {
+            return p().getInt(DECOY_ACCOUNT, -1);
+        } catch (Throwable e) {
+            return -1;
+        }
+    }
+
+    public static void setDecoyAccount(int account) {
+        try {
+            p().edit().putInt(DECOY_ACCOUNT, account).apply();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    public static boolean hasDuressCode() {
+        try {
+            String hash = p().getString(DURESS_HASH, "");
+            return hash != null && !hash.isEmpty();
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    public static void setDuressCode(String code) {
+        try {
+            if (code == null || code.isEmpty()) {
+                p().edit().remove(DURESS_HASH).remove(DURESS_SALT).apply();
+                return;
+            }
+            String salt = Utilities.bytesToHex(Utilities.computeSHA256(("edgegram" + System.currentTimeMillis()).getBytes(), 0, 0));
+            String hash = Utilities.bytesToHex(Utilities.computeSHA256((salt + code).getBytes(), 0, 0));
+            p().edit().putString(DURESS_SALT, salt).putString(DURESS_HASH, hash).apply();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    public static boolean checkDuressCode(String code) {
+        try {
+            String hash = p().getString(DURESS_HASH, "");
+            String salt = p().getString(DURESS_SALT, "");
+            if (hash == null || hash.isEmpty()) {
+                return false;
+            }
+            String test = Utilities.bytesToHex(Utilities.computeSHA256((salt + code).getBytes(), 0, 0));
+            return hash.equals(test);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
 
     public static boolean showUserId() { return get(SHOW_USER_ID, true); }
     public static boolean secretFree() { return get(SECRET_FREE, true); }
@@ -289,6 +377,74 @@ public class EdgeConfig {
         try {
             p().edit().putInt(MARK_COLOR, color).apply();
         } catch (Throwable ignore) {
+        }
+    }
+
+    private static boolean isSecretKey(String key) {
+        return "apiId".equals(key) || "apiHash".equals(key) || "sttKey".equals(key);
+    }
+
+    /** Whole settings set as a pretty JSON document. Secrets are never exported. */
+    public static String exportSettings() {
+        try {
+            org.json.JSONObject root = new org.json.JSONObject();
+            root.put("app", "EdgeGram");
+            root.put("version", 1);
+            root.put("date", System.currentTimeMillis() / 1000);
+            org.json.JSONObject settings = new org.json.JSONObject();
+            for (java.util.Map.Entry<String, ?> e : p().getAll().entrySet()) {
+                final String key = e.getKey();
+                if (isSecretKey(key) || key.startsWith("seen_")) {
+                    continue;
+                }
+                final Object value = e.getValue();
+                if (value instanceof Boolean || value instanceof Integer || value instanceof Long || value instanceof String) {
+                    settings.put(key, value);
+                }
+            }
+            root.put("settings", settings);
+            return root.toString(2);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    /** Applies a previously exported document. Returns the number of applied keys, or -1 on error. */
+    public static int importSettings(String json) {
+        try {
+            org.json.JSONObject root = new org.json.JSONObject(json);
+            org.json.JSONObject settings = root.optJSONObject("settings");
+            if (settings == null) {
+                return -1;
+            }
+            SharedPreferences.Editor editor = p().edit();
+            int applied = 0;
+            java.util.Iterator<String> keys = settings.keys();
+            while (keys.hasNext()) {
+                final String key = keys.next();
+                if (isSecretKey(key) || key.startsWith("seen_")) {
+                    continue;
+                }
+                final Object value = settings.get(key);
+                if (value instanceof Boolean) {
+                    editor.putBoolean(key, (Boolean) value);
+                } else if (value instanceof Integer) {
+                    editor.putInt(key, (Integer) value);
+                } else if (value instanceof Long) {
+                    editor.putLong(key, (Long) value);
+                } else if (value instanceof String) {
+                    editor.putString(key, (String) value);
+                } else {
+                    continue;
+                }
+                applied++;
+            }
+            editor.commit();
+            return applied;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return -1;
         }
     }
 

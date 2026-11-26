@@ -33,6 +33,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     public static final int PAGE_LOOK = 5;
     public static final int PAGE_TOOLS = 6;
     public static final int PAGE_NOTIFY = 9;
+    public static final int PAGE_HIDDEN = 10;
 
     private static final int ID_OPEN_BASE = 100;
 
@@ -80,6 +81,15 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_SPEED_BOOST = 44;
     private static final int ID_HIDDEN_SEARCH = 45;
     private static final int ID_KEEP_ALIVE = 46;
+    private static final int ID_SNOW = 49;
+    private static final int ID_IOS_PANEL = 50;
+    private static final int ID_DURESS = 60;
+    private static final int ID_DECOY = 61;
+    private static final int ID_HIDDEN_BASE = 200;
+    private static final int ID_BACKUP_EXPORT = 47;
+    private static final int ID_BACKUP_IMPORT = 48;
+    private static final int REQ_BACKUP_EXPORT = 4201;
+    private static final int REQ_BACKUP_IMPORT = 4202;
 
     private final int page;
     private PaletteView palette;
@@ -141,6 +151,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 return t("Tools", "Инструменты");
             case PAGE_NOTIFY:
                 return t("Notifications and background", "Уведомления и фон");
+            case PAGE_HIDDEN:
+                return t("Hidden mode", "Скрытый режим");
             default:
                 return "EdgeGram";
         }
@@ -182,6 +194,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case PAGE_NOTIFY:
                 fillNotify(items);
                 break;
+            case PAGE_HIDDEN:
+                fillHidden(items);
+                break;
             default:
                 fillMain(items);
         }
@@ -193,6 +208,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 t("Don't read, don't type, stay offline", "Не читать, не печатать, быть не в сети")));
         items.add(section(PAGE_SECRET, IconBackgroundColors.GREEN, R.drawable.settings_devices, t("Secret chats and timers", "Секретные чаты и таймеры"),
                 t("No limits, timed media stay", "Без ограничений, таймер-медиа остаются")));
+        items.add(section(PAGE_HIDDEN, IconBackgroundColors.GRAY, R.drawable.settings_privacy, t("Hidden mode", "Скрытый режим"),
+                t("Decoy passcode, invisible accounts", "Второй код и невидимые аккаунты")));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(t("History", "История")));
@@ -442,6 +459,11 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 t("Removes the stories row. Takes effect after restart", "Убирает ленту историй. Вступит в силу после перезапуска"), EdgeConfig.hideStories()));
         items.add(check(ID_HIDE_PREMIUM, t("Hide Premium offers", "Скрывать предложения Premium"),
                 t("Removes Premium buttons and promos. Takes effect after restart", "Убирает кнопки и рекламу Premium. Вступит в силу после перезапуска"), EdgeConfig.hidePremium()));
+        items.add(check(ID_IOS_PANEL, t("iOS-style input panel", "Панель ввода в стиле iOS"),
+                t("Moves the attach button inside the field on the left. Takes effect when you reopen a chat",
+                        "Переносит скрепку внутрь поля слева. Применяется при следующем открытии чата"), EdgeConfig.iosPanel()));
+        items.add(check(ID_SNOW, t("Snowflakes", "Снежинки"),
+                t("Snow falls over the chat list and chats", "Снег падает в списке чатов и в переписках"), EdgeConfig.snowflakes()));
         items.add(UItem.asButton(ID_APPEARANCE, t("Telegram themes and corners", "Темы и скругления Telegram")));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(t("Media", "Медиа")));
@@ -479,16 +501,215 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 "Включите нужные каналы: сообщения, группы, каналы, звонки.")));
     }
 
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResultFragment(requestCode, resultCode, data);
+        if (resultCode != android.app.Activity.RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        final android.net.Uri uri = data.getData();
+        if (requestCode == REQ_BACKUP_EXPORT) {
+            try {
+                final String json = EdgeConfig.exportSettings();
+                if (json == null) {
+                    return;
+                }
+                java.io.OutputStream os = getContext().getContentResolver().openOutputStream(uri);
+                if (os == null) {
+                    return;
+                }
+                os.write(json.getBytes("UTF-8"));
+                os.close();
+                android.widget.Toast.makeText(getContext(), t("Settings exported", "Настройки экспортированы"), android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Throwable e) {
+                org.telegram.messenger.FileLog.e(e);
+                android.widget.Toast.makeText(getContext(), t("Could not export", "Не удалось экспортировать"), android.widget.Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQ_BACKUP_IMPORT) {
+            try {
+                java.io.InputStream is = getContext().getContentResolver().openInputStream(uri);
+                if (is == null) {
+                    return;
+                }
+                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = is.read(buffer)) > 0) {
+                    bos.write(buffer, 0, read);
+                }
+                is.close();
+                final int applied = EdgeConfig.importSettings(new String(bos.toByteArray(), "UTF-8"));
+                if (applied >= 0) {
+                    refreshViews();
+                    android.widget.Toast.makeText(getContext(), t("Imported", "Импортировано") + ": " + applied, android.widget.Toast.LENGTH_SHORT).show();
+                } else {
+                    android.widget.Toast.makeText(getContext(), t("Wrong file", "Неверный файл"), android.widget.Toast.LENGTH_SHORT).show();
+                }
+            } catch (Throwable e) {
+                org.telegram.messenger.FileLog.e(e);
+            }
+        }
+    }
+
+    private void fillHidden(ArrayList<UItem> items) {
+        items.add(UItem.asHeader(t("Accounts", "Аккаунты")));
+        boolean any = false;
+        for (int a = 0; a < org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            final org.telegram.messenger.UserConfig config = org.telegram.messenger.UserConfig.getInstance(a);
+            if (!config.isClientActivated()) {
+                continue;
+            }
+            any = true;
+            final org.telegram.tgnet.TLRPC.User user = config.getCurrentUser();
+            final String name = user != null
+                    ? org.telegram.messenger.ContactsController.formatName(user.first_name, user.last_name)
+                    : t("Account", "Аккаунт") + " " + (a + 1);
+            items.add(check(ID_HIDDEN_BASE + a, name,
+                    t("Hidden from the switcher, no notifications", "Скрыт из переключателя, без уведомлений"),
+                    org.telegram.messenger.EdgeConfig.isAccountHidden(a)));
+        }
+        if (!any) {
+            items.add(UItem.asShadow(t("Add a second account first, then hide it here.", "Сначала добавьте второй аккаунт, потом скройте его здесь.")));
+        }
+        items.add(UItem.asShadow(null));
+
+        items.add(UItem.asHeader(t("Hidden passcode", "Код скрытого режима")));
+        items.add(UItem.asButton(ID_DURESS, t("Hidden mode code", "Код скрытого режима"),
+                org.telegram.messenger.EdgeConfig.hasDuressCode() ? t("Set", "Задан") : t("Not set", "Не задан")));
+        items.add(UItem.asButton(ID_DECOY, t("Decoy account", "Подставной аккаунт"), decoyAccountName()));
+        items.add(UItem.asShadow(t("With this code the app opens only the decoy account. The regular passcode keeps hidden accounts invisible and silent.",
+                "С этим кодом приложение откроет только подставной аккаунт. Обычный код оставляет скрытые аккаунты невидимыми и беззвучными.")));
+    }
+
+    private String decoyAccountName() {
+        final int decoy = org.telegram.messenger.EdgeConfig.getDecoyAccount();
+        if (decoy < 0) {
+            return t("Not selected", "Не выбран");
+        }
+        final org.telegram.messenger.UserConfig config = org.telegram.messenger.UserConfig.getInstance(decoy);
+        final org.telegram.tgnet.TLRPC.User user = config.getCurrentUser();
+        if (user == null) {
+            return t("Not selected", "Не выбран");
+        }
+        return org.telegram.messenger.ContactsController.formatName(user.first_name, user.last_name);
+    }
+
+    private void showDuressCodeDialog() {
+        final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+        if (ctx == null) {
+            return;
+        }
+        final int textColor = org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack);
+        final int hintColor = org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextHint);
+
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(ctx);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(4), AndroidUtilities.dp(22), 0);
+
+        final android.widget.TextView info = new android.widget.TextView(ctx);
+        info.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
+        info.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextGray2));
+        info.setText(t("The main code turns on the app lock itself, no need to set it in Telegram. Both codes must be different.",
+                "Основной код сам включит блокировку приложения, в настройки Telegram идти не нужно. Коды должны отличаться."));
+        box.addView(info);
+
+        final android.widget.EditText mainInput = new android.widget.EditText(ctx);
+        mainInput.setSingleLine(true);
+        mainInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        mainInput.setHint(t("Main code (unlocks everything)", "Основной код (открывает всё)"));
+        mainInput.setTextColor(textColor);
+        mainInput.setHintTextColor(hintColor);
+        box.addView(mainInput);
+
+        final android.widget.EditText hiddenInput = new android.widget.EditText(ctx);
+        hiddenInput.setSingleLine(true);
+        hiddenInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        hiddenInput.setHint(t("Hidden mode code (opens the decoy)", "Код скрытого режима (открывает подставной)"));
+        hiddenInput.setTextColor(textColor);
+        hiddenInput.setHintTextColor(hintColor);
+        box.addView(hiddenInput);
+
+        final org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
+        builder.setTitle(t("Codes", "Коды"));
+        builder.setView(box);
+        builder.setPositiveButton(t("Save", "Сохранить"), (d, w) -> {
+            final String main = mainInput.getText().toString().trim();
+            final String hidden = hiddenInput.getText().toString().trim();
+            if (!main.isEmpty() && org.telegram.messenger.SharedConfig.passcodeHash.isEmpty()) {
+                org.telegram.messenger.SharedConfig.enablePasscode(main);
+            }
+            if (!hidden.isEmpty()) {
+                org.telegram.messenger.EdgeConfig.setDuressCode(hidden);
+            }
+            refreshViews();
+        });
+        builder.setNeutralButton(t("Remove", "Удалить"), (d, w) -> {
+            org.telegram.messenger.EdgeConfig.setDuressCode("");
+            refreshViews();
+        });
+        builder.setNegativeButton(t("Cancel", "Отмена"), null);
+        builder.show();
+    }
+
+    private void showDecoyDialog() {
+        final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+        if (ctx == null) {
+            return;
+        }
+        final java.util.ArrayList<Integer> accounts = new java.util.ArrayList<>();
+        final java.util.ArrayList<CharSequence> names = new java.util.ArrayList<>();
+        for (int a = 0; a < org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            final org.telegram.messenger.UserConfig config = org.telegram.messenger.UserConfig.getInstance(a);
+            if (!config.isClientActivated()) {
+                continue;
+            }
+            final org.telegram.tgnet.TLRPC.User user = config.getCurrentUser();
+            accounts.add(a);
+            names.add(user != null
+                    ? org.telegram.messenger.ContactsController.formatName(user.first_name, user.last_name)
+                    : t("Account", "Аккаунт") + " " + (a + 1));
+        }
+        if (accounts.isEmpty()) {
+            return;
+        }
+        final org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
+        builder.setTitle(t("Decoy account", "Подставной аккаунт"));
+        builder.setItems(names.toArray(new CharSequence[0]), (d, which) -> {
+            org.telegram.messenger.EdgeConfig.setDecoyAccount(accounts.get(which));
+            refreshViews();
+        });
+        builder.setNegativeButton(t("Cancel", "Отмена"), null);
+        builder.show();
+    }
+
     private void fillTools(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Tools", "Инструменты")));
         items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), EdgeConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
         items.add(UItem.asButton(ID_API_KEYS, t("API keys", "API-ключи"), EdgeConfig.hasCustomApiKeys() ? t("Custom", "Свои") : t("Built-in", "Встроенные")));
         items.add(UItem.asButton(ID_OPEN_BASE + PAGE_NOTIFY, t("Notifications", "Уведомления"), t("Check", "Проверить")));
+        items.add(UItem.asButton(ID_BACKUP_EXPORT, t("Export settings", "Экспорт настроек"), t("Save to a file", "Сохранить в файл")));
+        items.add(UItem.asButton(ID_BACKUP_IMPORT, t("Import settings", "Импорт настроек"), t("Restore from a file", "Восстановить из файла")));
+        items.add(UItem.asShadow(t("Everything from this screen, including colours and marks. API keys and the speech key are never exported.",
+                "Всё с этого экрана, включая цвета и метки. API-ключи и ключ расшифровки не экспортируются.")));
         items.add(UItem.asShadow(t("Up to 10 accounts can be added in the same app.", "В приложение можно добавить до 10 аккаунтов.")));
     }
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.id >= ID_HIDDEN_BASE && item.id < ID_HIDDEN_BASE + org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT) {
+            final int account = item.id - ID_HIDDEN_BASE;
+            org.telegram.messenger.EdgeConfig.setAccountHidden(account, !org.telegram.messenger.EdgeConfig.isAccountHidden(account));
+            refreshViews();
+            return;
+        }
+        if (item.id == ID_DURESS) {
+            showDuressCodeDialog();
+            return;
+        }
+        if (item.id == ID_DECOY) {
+            showDecoyDialog();
+            return;
+        }
         if (item.id >= ID_OPEN_BASE && item.id < ID_OPEN_BASE + 20) {
             openSection(item.id - ID_OPEN_BASE);
             return;
@@ -611,6 +832,27 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case ID_API_KEYS:
                 EdgeMarks.showApiKeyDialog(this, false);
                 return;
+            case ID_IOS_PANEL:
+                EdgeConfig.toggle(EdgeConfig.IOS_PANEL, false);
+                break;
+            case ID_SNOW:
+                EdgeConfig.toggle(EdgeConfig.SNOWFLAKES, false);
+                break;
+            case ID_BACKUP_EXPORT: {
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                intent.setType("application/json");
+                intent.putExtra(android.content.Intent.EXTRA_TITLE, "edgegram-settings.json");
+                startActivityForResult(intent, REQ_BACKUP_EXPORT);
+                return;
+            }
+            case ID_BACKUP_IMPORT: {
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                intent.setType("application/json");
+                startActivityForResult(intent, REQ_BACKUP_IMPORT);
+                return;
+            }
             case ID_KEEP_ALIVE: {
                 final boolean on = EdgeConfig.toggle(EdgeConfig.KEEP_ALIVE, false);
                 if (on) {

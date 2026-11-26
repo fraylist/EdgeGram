@@ -30689,9 +30689,28 @@ public class ChatActivity extends BaseFragment implements
 
     Bulletin.Delegate bulletinDelegate;
 
+    private void updateSnowflakes() {
+        if (contentView == null) {
+            return;
+        }
+        final android.view.View existing = contentView.findViewWithTag("edge_snow");
+        if (org.telegram.messenger.EdgeConfig.snowflakes()) {
+            if (existing == null) {
+                final org.telegram.ui.Components.EdgeSnowView snow = new org.telegram.ui.Components.EdgeSnowView(getContext());
+                snow.setTag("edge_snow");
+                contentView.addView(snow, org.telegram.ui.Components.LayoutHelper.createFrame(
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT,
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT));
+            }
+        } else if (existing != null && existing.getParent() != null) {
+            ((android.view.ViewGroup) existing.getParent()).removeView(existing);
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        updateSnowflakes();
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
