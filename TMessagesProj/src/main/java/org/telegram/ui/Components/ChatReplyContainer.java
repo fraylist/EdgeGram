@@ -133,7 +133,8 @@ public class ChatReplyContainer extends FrameLayout {
 
             objHint = new SimpleTextView(context);
             objHint.setTextSize(14);
-            objHint.setText(LocaleController.getString(R.string.TapForForwardingOptions));
+            // EdgeGram: the forwarding-options hint inside the reply bar only added clutter
+        objHint.setText("");
             objHint.setAlpha(0f);
             addView(objHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
 

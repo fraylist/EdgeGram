@@ -225,6 +225,15 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
         checkBlurredHeight(false);
     }
 
+    private int inputTopExtra;
+    /** Height taken by the reply/edit bar above the field, so the bubble stays the field's size. */
+    public void setInputTopExtra(int extra) {
+        if (inputTopExtra != extra) {
+            inputTopExtra = extra;
+            invalidate();
+        }
+    }
+
     public void setInputBubbleOffsets(float left, float right) {
         inputBubbleOffsetLeft = left;
         inputBubbleOffsetRight = right;
@@ -270,22 +279,8 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
 
         final boolean edgeIosPanel = org.telegram.messenger.EdgeConfig.iosPanel();
         if (edgeIosPanel) {
-            // separate round bubble for the attach button, then the field bubble next to it
-            final int attachSize = inputBubbleHeightRound;
-            final int gap = dp(6);
-            final int sendInset = dp(54);
-
-            tmpRect.set(
-                attachSize + gap,
-                0,
-                getMeasuredWidth() - Math.round(inputBubbleOffsetRight) - sendInset,
-                inputBubbleHeightRound
-            );
-            tmpRect.inset(0, -dp(7));
-            tmpRect.offset(0, blurTop + (int) bubbleInputTranlationY);
-            blurredBackgroundDrawable.setBounds(tmpRect);
-            if (drawInputBackground)
-                blurredBackgroundDrawable.draw(canvas);
+            // the field draws its own bubble, so the island must not paint anything here:
+            // otherwise the bubble stretches over the reply bar when it appears
         } else {
             tmpRect.set(
                 Math.round(inputBubbleOffsetLeft),

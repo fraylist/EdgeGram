@@ -47280,6 +47280,9 @@ public class ChatActivity extends BaseFragment implements
         inputIslandHeightCurrent = calculateInputIslandHeight(false);
         inputIslandHeightTarget = calculateInputIslandHeight(true);
 
+        chatInputViewsContainer.setInputTopExtra((int) (chatActivityEnterView != null
+                ? chatActivityEnterView.getTopViewHeight() * chatActivityEnterView.getTopViewEnterProgress()
+                : 0));
         chatInputViewsContainer.setInputBubbleHeight(inputIslandHeightCurrent);
         updatePagedownButtonsPosition();
         updateBotforumTabsBottomMargin();

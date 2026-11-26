@@ -2876,6 +2876,11 @@ public class ChatActivityEnterView extends FrameLayout implements
             ThemeBind.selectorBackground(attachButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             final boolean edgeIosPanel = org.telegram.messenger.EdgeConfig.iosPanel();
             if (edgeIosPanel) {
+                android.graphics.drawable.GradientDrawable fieldBg = new android.graphics.drawable.GradientDrawable();
+                fieldBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                fieldBg.setCornerRadius(dp(22));
+                fieldBg.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+                messageEditTextContainer.setBackground(fieldBg);
                 // iOS style: the attach button lives outside the input bubble, on the left
                 android.graphics.drawable.GradientDrawable attachBg = new android.graphics.drawable.GradientDrawable();
                 attachBg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
