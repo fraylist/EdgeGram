@@ -1,0 +1,9 @@
+{
+  "versionCode": 73129,
+  "versionName": "13.2.2 r12",
+  "changelog": "Скрытый режим, бэкап настроек, снежинки, iOS-панель, фикс плашки ответа.",
+  "force": false,
+  "minVersion": 73120,
+  "arm64": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r12/EdgeGram-13.2.2-r12-arm64.apk",
+  "universal": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r12/EdgeGram-13.2.2-r12-universal.apk"
+}

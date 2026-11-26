@@ -9,6 +9,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeUpdater;
 import org.telegram.messenger.EdgeKeepAliveService;
 import org.telegram.messenger.EdgeStore;
 import org.telegram.messenger.R;
@@ -86,6 +87,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_DURESS = 60;
     private static final int ID_DECOY = 61;
     private static final int ID_HIDDEN_BASE = 200;
+    private static final int ID_CHECK_UPDATES = 70;
+    private static final int ID_UPDATE_URL = 71;
     private static final int ID_BACKUP_EXPORT = 47;
     private static final int ID_BACKUP_IMPORT = 48;
     private static final int REQ_BACKUP_EXPORT = 4201;
@@ -651,6 +654,34 @@ public class EdgeSettingsActivity extends UniversalFragment {
         builder.show();
     }
 
+    private void showUpdateUrlDialog() {
+        final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+        if (ctx == null) {
+            return;
+        }
+        final int textColor = org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack);
+        final android.widget.EditText input = new android.widget.EditText(ctx);
+        input.setSingleLine(true);
+        input.setHint("https://…/latest.json");
+        input.setTextColor(textColor);
+        input.setHintTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextHint));
+        input.setText(EdgeConfig.getString("updateUrl", ""));
+        input.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(8), AndroidUtilities.dp(22), 0);
+        final org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
+        builder.setTitle(t("Update server", "Сервер обновлений"));
+        builder.setView(input);
+        builder.setPositiveButton(t("Save", "Сохранить"), (d, w) -> {
+            EdgeConfig.setString("updateUrl", input.getText().toString().trim());
+            refreshViews();
+        });
+        builder.setNeutralButton(t("GitHub", "GitHub"), (d, w) -> {
+            EdgeConfig.setString("updateUrl", "");
+            refreshViews();
+        });
+        builder.setNegativeButton(t("Cancel", "Отмена"), null);
+        builder.show();
+    }
+
     private void showDecoyDialog() {
         final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
         if (ctx == null) {
@@ -687,6 +718,12 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), EdgeConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
         items.add(UItem.asButton(ID_API_KEYS, t("API keys", "API-ключи"), EdgeConfig.hasCustomApiKeys() ? t("Custom", "Свои") : t("Built-in", "Встроенные")));
         items.add(UItem.asButton(ID_OPEN_BASE + PAGE_NOTIFY, t("Notifications", "Уведомления"), t("Check", "Проверить")));
+        items.add(UItem.asButton(ID_CHECK_UPDATES, t("Check for updates", "Проверить обновления"),
+                t("Version", "Версия") + " " + EdgeUpdater.currentVersionCode(getParentActivity())));
+        items.add(UItem.asButton(ID_UPDATE_URL, t("Update server", "Сервер обновлений"),
+                EdgeConfig.getString("updateUrl", "").isEmpty() ? t("GitHub", "GitHub") : t("Custom", "Свой")));
+        items.add(UItem.asShadow(t("Updates are installed over the app, data stays. A custom URL must return the update JSON.",
+                "Обновление ставится поверх приложения, данные сохраняются. Свой URL должен отдавать JSON обновления.")));
         items.add(UItem.asButton(ID_BACKUP_EXPORT, t("Export settings", "Экспорт настроек"), t("Save to a file", "Сохранить в файл")));
         items.add(UItem.asButton(ID_BACKUP_IMPORT, t("Import settings", "Импорт настроек"), t("Restore from a file", "Восстановить из файла")));
         items.add(UItem.asShadow(t("Everything from this screen, including colours and marks. API keys and the speech key are never exported.",
@@ -838,6 +875,25 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case ID_SNOW:
                 EdgeConfig.toggle(EdgeConfig.SNOWFLAKES, false);
                 break;
+            case ID_CHECK_UPDATES: {
+                final android.content.Context ctx = getParentActivity();
+                EdgeUpdater.check(ctx, (info, upToDate) -> {
+                    if (ctx == null) {
+                        return;
+                    }
+                    if (info != null && !upToDate) {
+                        EdgeUpdater.showDialog(getParentActivity(), info);
+                    } else {
+                        android.widget.Toast.makeText(ctx, t("You are on the latest version", "У вас последняя версия"),
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return;
+            }
+            case ID_UPDATE_URL: {
+                showUpdateUrlDialog();
+                return;
+            }
             case ID_BACKUP_EXPORT: {
                 android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);

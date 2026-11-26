@@ -423,6 +423,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (EdgeConfig.keepAlive()) {
             EdgeKeepAliveService.start(this);
         }
+        checkEdgeUpdates();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
         if (SharedConfig.appLocked) {
@@ -7219,6 +7220,25 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     View feedbackView;
+
+    private void checkEdgeUpdates() {
+        final long now = System.currentTimeMillis();
+        final String stored = org.telegram.messenger.EdgeConfig.getString("lastUpdateCheck", "");
+        long last = 0;
+        try {
+            last = stored.isEmpty() ? 0 : Long.parseLong(stored);
+        } catch (Throwable ignore) {
+        }
+        if (now - last < 24L * 60L * 60L * 1000L) {
+            return;
+        }
+        org.telegram.messenger.EdgeConfig.setString("lastUpdateCheck", String.valueOf(now));
+        org.telegram.messenger.EdgeUpdater.check(this, (info, upToDate) -> {
+            if (info != null && !upToDate) {
+                org.telegram.messenger.EdgeUpdater.showDialog(LaunchActivity.this, info);
+            }
+        });
+    }
 
     @Override
     protected void onResume() {

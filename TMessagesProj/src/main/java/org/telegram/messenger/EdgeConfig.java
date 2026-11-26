@@ -310,6 +310,13 @@ public class EdgeConfig {
         return hidePhone() ? "+\u2022\u2022\u2022 \u2022\u2022\u2022 \u2022\u2022 \u2022\u2022" : phone;
     }
 
+    public static void setString(String key, String value) {
+        try {
+            p().edit().putString(key, value == null ? "" : value).apply();
+        } catch (Throwable ignore) {
+        }
+    }
+
     public static String getString(String key, String def) {
         try {
             return p().getString(key, def);
