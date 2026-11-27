@@ -151,6 +151,7 @@ public class EdgeConfig {
     public static final String DECOY_ACCOUNT = "decoyAccount";
     public static final String DURESS_HASH = "duressHash";
     public static final String DURESS_SALT = "duressSalt";
+    private static final java.util.HashSet<String> unlockedChats = new java.util.HashSet<>();
     public static final String SPEED_BOOST = "speedBoost";
     public static final String SHOW_USER_ID = "showUserId";
     public static final String SECRET_FREE = "secretFree";
@@ -220,6 +221,30 @@ public class EdgeConfig {
     public static boolean snowflakes() { return get(SNOWFLAKES, false); }
 
     public static boolean iosPanel() { return get(IOS_PANEL, false); }
+
+    public static boolean isChatLocked(int account, long dialogId) {
+        return get("locked_" + account + "_" + dialogId, false);
+    }
+
+    public static void setChatLocked(int account, long dialogId, boolean locked) {
+        set("locked_" + account + "_" + dialogId, locked);
+    }
+
+    public static boolean isChatUnlockedNow(int account, long dialogId) {
+        return unlockedChats.contains(account + "_" + dialogId);
+    }
+
+    public static void markChatUnlocked(int account, long dialogId) {
+        unlockedChats.add(account + "_" + dialogId);
+    }
+
+    public static void lockChatAgain(int account, long dialogId) {
+        unlockedChats.remove(account + "_" + dialogId);
+    }
+
+    public static void forgetUnlockedChats() {
+        unlockedChats.clear();
+    }
 
     /** True while the app was opened with the hidden mode code. Not persisted on purpose. */
     public static boolean duressSession;

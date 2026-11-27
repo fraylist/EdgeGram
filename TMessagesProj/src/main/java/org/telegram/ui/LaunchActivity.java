@@ -428,6 +428,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         currentAccount = UserConfig.selectedAccount;
         if (SharedConfig.appLocked) {
             org.telegram.messenger.EdgeConfig.duressSession = false;
+            org.telegram.messenger.EdgeConfig.forgetUnlockedChats();
         }
         if (org.telegram.messenger.EdgeConfig.isAccountHidden(currentAccount)) {
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);

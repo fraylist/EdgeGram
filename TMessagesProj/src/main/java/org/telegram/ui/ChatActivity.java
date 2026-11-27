@@ -1711,6 +1711,7 @@ public class ChatActivity extends BaseFragment implements
 
     private final static int view_as_topics = 59;
     private final static int chat_menu_edge_download = 2001;
+    private final static int chat_menu_edge_lock = 2002;
 
     private final static int search = 40;
 
@@ -3747,6 +3748,15 @@ public class ChatActivity extends BaseFragment implements
                     }
                 } else if (id == chat_menu_edge_download) {
                     EdgeDownloader.show(ChatActivity.this, messages);
+                } else if (id == chat_menu_edge_lock) {
+                    final boolean locked = !EdgeConfig.isChatLocked(currentAccount, dialog_id);
+                    EdgeConfig.setChatLocked(currentAccount, dialog_id, locked);
+                    if (locked) {
+                        EdgeConfig.markChatUnlocked(currentAccount, dialog_id);
+                    }
+                    android.widget.Toast.makeText(getParentActivity(), locked
+                            ? EdgeConfig.tr("Chat is locked: biometrics required on next open", "Чат заблокирован: при следующем открытии нужна биометрия")
+                            : EdgeConfig.tr("Chat lock removed", "Блокировка чата снята"), android.widget.Toast.LENGTH_SHORT).show();
                 } else if (id == view_as_topics) {
                     if (getUserConfig().getClientUserId() == dialog_id) {
                         getMessagesController().setSavedViewAs(true);
@@ -4301,7 +4311,7 @@ public class ChatActivity extends BaseFragment implements
             otherIcon.addView(headerItem.getIconView());
             headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             headerItem.lazilyAddSubItem(chat_menu_edge_download, R.drawable.msg_download, EdgeConfig.tr("Download everything", "Скачать всё из чата"));
-
+            
             if (currentUser != null && currentUser.self && chatMode != MODE_SAVED) {
                 savedChatsItem = headerItem.lazilyAddSubItem(view_as_topics, R.drawable.msg_topics, LocaleController.getString(R.string.SavedViewAsChats));
                 savedChatsGap = headerItem.lazilyAddColoredGap();
@@ -30711,6 +30721,9 @@ public class ChatActivity extends BaseFragment implements
     public void onResume() {
         super.onResume();
         updateSnowflakes();
+        if (contentView != null) {
+            EdgeChatLock.apply(this, contentView, currentAccount, dialog_id, null);
+        }
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
@@ -30926,6 +30939,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onPause() {
+        if (EdgeConfig.isChatLocked(currentAccount, dialog_id)) {
+            EdgeConfig.lockChatAgain(currentAccount, dialog_id);
+        }
         super.onPause();
         scrolling = false;
         if (scrimPopupWindow != null) {

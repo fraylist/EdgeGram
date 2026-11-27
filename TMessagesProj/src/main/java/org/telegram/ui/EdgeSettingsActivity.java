@@ -35,6 +35,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     public static final int PAGE_TOOLS = 6;
     public static final int PAGE_NOTIFY = 9;
     public static final int PAGE_HIDDEN = 10;
+    public static final int PAGE_LOCKED_CHATS = 11;
 
     private static final int ID_OPEN_BASE = 100;
 
@@ -87,14 +88,18 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_DURESS = 60;
     private static final int ID_DECOY = 61;
     private static final int ID_HIDDEN_BASE = 200;
+    private static final int ID_LOCK_BASE = 300;
     private static final int ID_CHECK_UPDATES = 70;
     private static final int ID_UPDATE_URL = 71;
+    private static final int ID_LOCK_SEARCH = 72;
     private static final int ID_BACKUP_EXPORT = 47;
     private static final int ID_BACKUP_IMPORT = 48;
     private static final int REQ_BACKUP_EXPORT = 4201;
     private static final int REQ_BACKUP_IMPORT = 4202;
 
     private final int page;
+    private android.widget.EditText lockSearch;
+    private String lockQuery = "";
     private PaletteView palette;
     private EdgePreviewView chatPreview;
     private EdgePreviewView listPreview;
@@ -156,6 +161,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 return t("Notifications and background", "Уведомления и фон");
             case PAGE_HIDDEN:
                 return t("Hidden mode", "Скрытый режим");
+            case PAGE_LOCKED_CHATS:
+                return t("Chats with fingerprint", "Чаты с отпечатком");
             default:
                 return "EdgeGram";
         }
@@ -200,6 +207,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
             case PAGE_HIDDEN:
                 fillHidden(items);
                 break;
+            case PAGE_LOCKED_CHATS:
+                fillLockedChats(items);
+                break;
             default:
                 fillMain(items);
         }
@@ -213,6 +223,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 t("No limits, timed media stay", "Без ограничений, таймер-медиа остаются")));
         items.add(section(PAGE_HIDDEN, IconBackgroundColors.GRAY, R.drawable.settings_privacy, t("Hidden mode", "Скрытый режим"),
                 t("Decoy passcode, invisible accounts", "Второй код и невидимые аккаунты")));
+        items.add(section(PAGE_LOCKED_CHATS, IconBackgroundColors.GRAY, R.drawable.permission_locked, t("Chats with fingerprint", "Чаты с отпечатком"),
+                t("Ask for biometrics when opening a chat", "Спрашивать отпечаток при открытии чата")));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(t("History", "История")));
@@ -554,6 +566,58 @@ public class EdgeSettingsActivity extends UniversalFragment {
         }
     }
 
+    private void fillLockedChats(ArrayList<UItem> items) {
+        items.add(UItem.asHeader(t("Chats", "Чаты")));
+        items.add(UItem.asButton(ID_LOCK_SEARCH, t("Search chats", "Поиск по чатам"),
+                lockQuery.isEmpty() ? t("All chats", "Все чаты") : lockQuery));
+        items.add(UItem.asShadow(t("Turn the switch on and the chat will ask for a fingerprint when opened. The lock resets when the app is locked.",
+                "Включите переключатель — чат будет спрашивать отпечаток при открытии. Блокировка сбрасывается при блокировке приложения.")));
+        final ArrayList<org.telegram.tgnet.TLRPC.Dialog> dialogs =
+                org.telegram.messenger.MessagesController.getInstance(currentAccount).getAllDialogs();
+        int shown = 0;
+        for (int i = 0; i < dialogs.size() && shown < 100; i++) {
+            final org.telegram.tgnet.TLRPC.Dialog dialog = dialogs.get(i);
+            if (dialog == null || dialog.id == 0
+                    || org.telegram.messenger.DialogObject.isEncryptedDialog(dialog.id)
+                    || dialog.id > 1_000_000_000_000L) {
+                continue;
+            }
+            final String name = chatNameForLock(dialog.id);
+            if (!lockQuery.isEmpty() && !name.toLowerCase().contains(lockQuery.toLowerCase())) {
+                continue;
+            }
+            items.add(check(ID_LOCK_BASE + i, name, null,
+                    org.telegram.messenger.EdgeConfig.isChatLocked(currentAccount, dialog.id)));
+            shown++;
+        }
+        if (shown == 0) {
+            items.add(UItem.asShadow(t("No chats yet.", "Чатов пока нет.")));
+        }
+        items.add(UItem.asShadow(null));
+    }
+
+    private String chatNameForLock(long dialogId) {
+        try {
+            final org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(currentAccount);
+            if (dialogId > 0) {
+                final org.telegram.tgnet.TLRPC.User user = controller.getUser(dialogId);
+                if (user != null) {
+                    final String name = org.telegram.messenger.ContactsController.formatName(user.first_name, user.last_name);
+                    if (name != null && !name.isEmpty()) {
+                        return name;
+                    }
+                }
+            } else {
+                final org.telegram.tgnet.TLRPC.Chat chat = controller.getChat(-dialogId);
+                if (chat != null && chat.title != null && !chat.title.isEmpty()) {
+                    return chat.title;
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return String.valueOf(dialogId);
+    }
+
     private void fillHidden(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Accounts", "Аккаунты")));
         boolean any = false;
@@ -654,6 +718,33 @@ public class EdgeSettingsActivity extends UniversalFragment {
         builder.show();
     }
 
+    private void showLockSearchDialog() {
+        final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+        if (ctx == null) {
+            return;
+        }
+        final android.widget.EditText input = new android.widget.EditText(ctx);
+        input.setSingleLine(true);
+        input.setHint(t("Chat name", "Название чата"));
+        input.setText(lockQuery);
+        input.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
+        input.setHintTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextHint));
+        input.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(8), AndroidUtilities.dp(22), 0);
+        final org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
+        builder.setTitle(t("Search chats", "Поиск по чатам"));
+        builder.setView(input);
+        builder.setPositiveButton(t("Apply", "Применить"), (d, w) -> {
+            lockQuery = input.getText().toString().trim();
+            refreshViews();
+        });
+        builder.setNeutralButton(t("Reset", "Сбросить"), (d, w) -> {
+            lockQuery = "";
+            refreshViews();
+        });
+        builder.setNegativeButton(t("Cancel", "Отмена"), null);
+        builder.show();
+    }
+
     private void showUpdateUrlDialog() {
         final android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
         if (ctx == null) {
@@ -733,6 +824,18 @@ public class EdgeSettingsActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.id >= ID_LOCK_BASE && item.id < ID_LOCK_BASE + 500) {
+            final ArrayList<org.telegram.tgnet.TLRPC.Dialog> dialogs =
+                    org.telegram.messenger.MessagesController.getInstance(currentAccount).getAllDialogs();
+            final int index = item.id - ID_LOCK_BASE;
+            if (index >= 0 && index < dialogs.size()) {
+                final long dialogId = dialogs.get(index).id;
+                org.telegram.messenger.EdgeConfig.setChatLocked(currentAccount, dialogId,
+                        !org.telegram.messenger.EdgeConfig.isChatLocked(currentAccount, dialogId));
+                refreshViews();
+            }
+            return;
+        }
         if (item.id >= ID_HIDDEN_BASE && item.id < ID_HIDDEN_BASE + org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT) {
             final int account = item.id - ID_HIDDEN_BASE;
             org.telegram.messenger.EdgeConfig.setAccountHidden(account, !org.telegram.messenger.EdgeConfig.isAccountHidden(account));
@@ -888,6 +991,10 @@ public class EdgeSettingsActivity extends UniversalFragment {
                                 android.widget.Toast.LENGTH_SHORT).show();
                     }
                 });
+                return;
+            }
+            case ID_LOCK_SEARCH: {
+                showLockSearchDialog();
                 return;
             }
             case ID_UPDATE_URL: {
