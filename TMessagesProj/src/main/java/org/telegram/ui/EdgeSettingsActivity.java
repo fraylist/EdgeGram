@@ -723,16 +723,20 @@ public class EdgeSettingsActivity extends UniversalFragment {
         if (ctx == null) {
             return;
         }
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(ctx);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(4), AndroidUtilities.dp(22), 0);
         final android.widget.EditText input = new android.widget.EditText(ctx);
         input.setSingleLine(true);
+        input.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 16);
         input.setHint(t("Chat name", "Название чата"));
         input.setText(lockQuery);
         input.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
         input.setHintTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextHint));
-        input.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(8), AndroidUtilities.dp(22), 0);
+        box.addView(input);
         final org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
         builder.setTitle(t("Search chats", "Поиск по чатам"));
-        builder.setView(input);
+        builder.setView(box);
         builder.setPositiveButton(t("Apply", "Применить"), (d, w) -> {
             lockQuery = input.getText().toString().trim();
             refreshViews();
