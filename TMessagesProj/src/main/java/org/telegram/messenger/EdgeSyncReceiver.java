@@ -124,7 +124,19 @@ public class EdgeSyncReceiver extends BroadcastReceiver {
             if (pendingIntent == null) {
                 return;
             }
-            long triggerAt = System.currentTimeMillis() + SYNC_INTERVAL_MS;
+            final long now = System.currentTimeMillis();
+            long already = 0;
+            try {
+                final String stored = EdgeConfig.getString("edgeSyncAt", "");
+                already = stored.isEmpty() ? 0 : Long.parseLong(stored);
+            } catch (Throwable ignore) {
+            }
+            if (already > now + 30_000L) {
+                // already armed: do not push it forward on every service start
+                return;
+            }
+            long triggerAt = now + SYNC_INTERVAL_MS;
+            EdgeConfig.setString("edgeSyncAt", String.valueOf(triggerAt));
             if (canUseExact(alarmManager)) {
                 try {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
@@ -158,6 +170,7 @@ public class EdgeSyncReceiver extends BroadcastReceiver {
             }
             alarmManager.cancel(pendingIntent);
             pendingIntent.cancel();
+            EdgeConfig.setString("edgeSyncAt", "0");
         } catch (Throwable e) {
             FileLog.e(e);
         }
