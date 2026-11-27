@@ -24,6 +24,7 @@ import org.telegram.ui.LaunchActivity;
 public class EdgeKeepAliveService extends Service {
 
     private static final String CHANNEL_ID = "edge_keep_alive";
+    private android.os.PowerManager.WakeLock wakeLock;
     private static final int NOTIFICATION_ID = 1877;
 
     public static void start(Context context) {
@@ -51,6 +52,7 @@ public class EdgeKeepAliveService extends Service {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+        EdgeSyncReceiver.cancel(context);
     }
 
     @Override
@@ -77,6 +79,12 @@ public class EdgeKeepAliveService extends Service {
             FileLog.e(e);
         }
         applyPushConnection();
+        applyWakeLock();
+        if (EdgeConfig.keepAlive()) {
+            EdgeSyncReceiver.schedule(this);
+        } else {
+            EdgeSyncReceiver.cancel(this);
+        }
         return START_STICKY;
     }
 
@@ -131,6 +139,44 @@ public class EdgeKeepAliveService extends Service {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    private void applyWakeLock() {
+        try {
+            if (!EdgeConfig.wakeLock()) {
+                releaseWakeLock();
+                return;
+            }
+            if (wakeLock == null) {
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                if (pm == null) {
+                    return;
+                }
+                wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "EdgeGram:keepalive");
+                wakeLock.setReferenceCounted(false);
+            }
+            if (!wakeLock.isHeld()) {
+                wakeLock.acquire();
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void releaseWakeLock() {
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        releaseWakeLock();
+        super.onDestroy();
     }
 
     private void createChannel() {

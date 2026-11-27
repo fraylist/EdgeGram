@@ -92,6 +92,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_CHECK_UPDATES = 70;
     private static final int ID_UPDATE_URL = 71;
     private static final int ID_LOCK_SEARCH = 72;
+    private static final int ID_WAKE_LOCK = 73;
     private static final int ID_BACKUP_EXPORT = 47;
     private static final int ID_BACKUP_IMPORT = 48;
     private static final int REQ_BACKUP_EXPORT = 4201;
@@ -503,6 +504,12 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 notifGranted ? t("Granted", "Разрешено") : t("Denied — tap to fix", "Запрещено — нажмите, чтобы исправить")));
         items.add(UItem.asButton(ID_BATTERY, t("Background work", "Работа в фоне"),
                 batteryOk ? t("Allowed", "Разрешена") : t("Restricted — tap to allow", "Ограничена — нажмите, чтобы разрешить")));
+        items.add(UItem.asHeader(t("Your phone", "Ваш телефон") + ": " + android.os.Build.MANUFACTURER));
+        items.add(UItem.asShadow(brandHint()));
+        items.add(check(ID_WAKE_LOCK, t("Active connection (wake lock)", "Активное соединение (wake lock)"),
+                t("Keeps the CPU awake so notifications arrive even in Doze. Uses noticeably more battery.",
+                        "Не даёт процессору засыпать, чтобы уведомления шли и в Doze. Заметно расходует батарею."),
+                org.telegram.messenger.EdgeConfig.wakeLock()));
         items.add(check(ID_KEEP_ALIVE, t("Stay connected in background", "Держать соединение в фоне"),
                 t("A quiet permanent notification; messages arrive even after the app is swiped away. Uses more battery.",
                         "Тихое постоянное уведомление; сообщения приходят даже после закрытия приложения. Расходует батарею."), EdgeConfig.keepAlive()));
@@ -808,6 +815,36 @@ public class EdgeSettingsActivity extends UniversalFragment {
         builder.show();
     }
 
+    private String brandHint() {
+        final String brand = (android.os.Build.MANUFACTURER + " " + android.os.Build.BRAND).toLowerCase();
+        if (brand.contains("samsung")) {
+            return t("Samsung: Settings - Apps - EdgeGram - Battery - Unrestricted. Also Settings - Battery - Background usage limits - remove EdgeGram from Sleeping apps.",
+                    "Samsung: Настройки - Приложения - EdgeGram - Батарея - «Без ограничений». Ещё Настройки - Батарея - Ограничения фоновой работы - уберите EdgeGram из «Спящих приложений».");
+        }
+        if (brand.contains("xiaomi") || brand.contains("redmi") || brand.contains("poco")) {
+            return t("Xiaomi/Redmi/POCO: Security - Permissions - Autostart - enable EdgeGram. Then Settings - Battery - Battery saver - No restrictions.",
+                    "Xiaomi/Redmi/POCO: Безопасность - Разрешения - Автозапуск - включите EdgeGram. Затем Настройки - Батарея - Экономия - «Без ограничений».");
+        }
+        if (brand.contains("huawei") || brand.contains("honor")) {
+            return t("Honor/Huawei: Settings - Battery - App launch - EdgeGram - Manage automatically OFF, then enable Auto-launch, Secondary launch and Run in background.",
+                    "Honor/Huawei: Настройки - Батарея - Запуск приложений - EdgeGram - «Управлять автоматически» выключить, включить «Автозапуск», «Косвенный запуск» и «Работа в фоне».");
+        }
+        if (brand.contains("meizu")) {
+            return t("Meizu: Settings - Power - Background app management - EdgeGram - Allow. Also enable Autostart in Security - Permissions.",
+                    "Meizu: Настройки - Питание - Управление фоновыми приложениями - EdgeGram - «Разрешить». Ещё включите автозапуск в Безопасность - Разрешения.");
+        }
+        if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")) {
+            return t("OPPO/realme/OnePlus: Settings - Battery - Battery optimization - EdgeGram - Don't optimize. Also allow Auto-launch in app management.",
+                    "OPPO/realme/OnePlus: Настройки - Батарея - Оптимизация батареи - EdgeGram - «Не оптимизировать». Также разрешите автозапуск в управлении приложениями.");
+        }
+        if (brand.contains("vivo") || brand.contains("iqoo")) {
+            return t("vivo/iQOO: Settings - Battery - Power saving - EdgeGram - No restriction. Also enable Auto-start in app permissions.",
+                    "vivo/iQOO: Настройки - Батарея - Энергосбережение - EdgeGram - «Не ограничивать». Также включите автозапуск в разрешениях приложения.");
+        }
+        return t("Allow autostart, background work and remove battery restrictions for EdgeGram in the system settings.",
+                "Разрешите автозапуск, работу в фоне и снимите ограничения батареи для EdgeGram в настройках системы.");
+    }
+
     private void fillTools(ArrayList<UItem> items) {
         items.add(UItem.asHeader(t("Tools", "Инструменты")));
         items.add(UItem.asButton(ID_STT, t("Voice transcription", "Расшифровка голосовых"), EdgeConfig.getSttKey().isEmpty() ? t("Not set up", "Не настроена") : t("On", "Включена")));
@@ -1019,6 +1056,11 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 intent.setType("application/json");
                 startActivityForResult(intent, REQ_BACKUP_IMPORT);
                 return;
+            }
+            case ID_WAKE_LOCK: {
+                org.telegram.messenger.EdgeConfig.toggle(org.telegram.messenger.EdgeConfig.WAKE_LOCK, false);
+                EdgeKeepAliveService.start(getParentActivity());
+                break;
             }
             case ID_KEEP_ALIVE: {
                 final boolean on = EdgeConfig.toggle(EdgeConfig.KEEP_ALIVE, false);

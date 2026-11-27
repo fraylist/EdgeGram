@@ -23,6 +23,9 @@ public class AppStartReceiver extends BroadcastReceiver {
                     SharedConfig.saveConfig();
                 }
                 ApplicationLoader.startPushService();
+                if (EdgeConfig.keepAlive()) {
+                    EdgeSyncReceiver.schedule(context);
+                }
             });
         }
     }

@@ -113,6 +113,10 @@
             android:name="org.telegram.messenger.EdgeKeepAliveService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name="org.telegram.messenger.EdgeSyncReceiver"
+            android:exported="false" />
         <!-- usesCleartextTraffic for browser supporting opening http:// links -->
 
         <activity-alias
