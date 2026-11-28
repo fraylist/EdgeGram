@@ -1,15 +1,15 @@
 {
-  "versionCode": 73149,
-  "versionName": "13.2.2 r14",
-  "changelog": "Биометрия на отдельные чаты, wake lock и досинхронизация уведомлений, подсказки по бренду телефона.",
+  "versionCode": 73159,
+  "versionName": "13.2.2 r15",
+  "changelog": "• Перемешивание цифр PIN на экране блокировки• Проверка SHA-256 скачанного APK• SHA256SUMS.txt и CERTIFICATES.txt в релизе",
   "force": false,
   "minVersion": 73120,
   "arm64": {
-    "url": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r14/EdgeGram-13.2.2-r14-arm64.apk",
-    "sha256": "0bdab2da60506f7215a016bbe0dd0af02e43db346c0f889e6c01723b05dbb4dd"
+    "url": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r15/EdgeGram-13.2.2-r15-arm64.apk",
+    "sha256": "54621d5657359b850e5ea63957d0b21bf8e4fe2da463fe6c4950c7fa66ee9c5a"
   },
   "universal": {
-    "url": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r14/EdgeGram-13.2.2-r14-universal.apk",
-    "sha256": "0c9556734e1136ce63056aa913159c2cdff39f7b12b8f1b32b34f0373786d36a"
+    "url": "https://github.com/fraylist/EdgeGram/releases/download/v13.2.2-r15/EdgeGram-13.2.2-r15-universal.apk",
+    "sha256": "a22178a8af99b76697a0353582f6c2b40594de3c5506abd8c886f095c4d4514c"
   }
 }
