@@ -54,18 +54,14 @@ jobs:
 
       - name: Restore signing key
         run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
-            sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}/" gradle.properties
-            sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
-            sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
-          else
-            echo "No signing key secret, using the public test key from the repository"
-            cp TMessagesProj/config/release.keystore TMessagesProj/config/edgegram.keystore
-            sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=android/" gradle.properties
-            sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=androidkey/" gradle.properties
-            sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=android/" gradle.properties
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "::error::Секрет KEYSTORE_BASE64 не задан. Публичный тестовый ключ из репозитория запрещён: релиз должен быть подписан ключом EdgeGram."
+            exit 1
           fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
+          sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}/" gradle.properties
+          sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
+          sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
 
       - name: Build arm64
         run: |
@@ -79,11 +75,42 @@ jobs:
           ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=armeabi-v7a,arm64-v8a,x86,x86_64 --no-daemon --stacktrace
           cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-universal.apk"
 
+      - name: Checksums and certificate fingerprints
+        run: |
+          cd out
+          sha256sum *.apk > SHA256SUMS.txt
+          for f in *.apk; do sha256sum "$f" > "$f.sha256"; done
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | head -1)
+          if [ -z "$APKSIGNER" ]; then echo "::error::apksigner не найден"; exit 1; fi
+          for f in *.apk; do
+            "$APKSIGNER" verify --print-certs "$f" | grep -E "certificate DN|certificate SHA-256" >> CERTIFICATES.txt
+          done
+          cat CERTIFICATES.txt
+          cat SHA256SUMS.txt
+
+      - name: Install minisign and sign checksums
+        run: |
+          if [ -z "${{ secrets.MINISIGN_SECRET_KEY }}" ]; then
+            echo "::error::Секрет MINISIGN_SECRET_KEY не задан: подпись контрольных сумм недоступна."
+            exit 1
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq minisign
+          mkdir -p "$HOME/.minisign"
+          echo "${{ secrets.MINISIGN_SECRET_KEY }}" | base64 -d > "$HOME/.minisign/minisign.key"
+          minisign -S -s "$HOME/.minisign/minisign.key" -m out/SHA256SUMS.txt -x out/SHA256SUMS.txt.minisig -W
+          rm -f "$HOME/.minisign/minisign.key"
+          cat out/SHA256SUMS.txt.minisig
+
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: EdgeGram-${{ github.ref_name }}
-          path: out/*.apk
+          path: |
+            out/*.apk
+            out/SHA256SUMS.txt
+            out/*.sha256
+            out/CERTIFICATES.txt
+            out/*.minisig
           if-no-files-found: error
 
       - name: Publish release
@@ -91,5 +118,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: EdgeGram ${{ github.ref_name }}
-          files: out/*.apk
+          files: |
+            out/*.apk
+            out/SHA256SUMS.txt
+            out/*.sha256
+            out/CERTIFICATES.txt
+            out/SHA256SUMS.txt.minisig
           fail_on_unmatched_files: true

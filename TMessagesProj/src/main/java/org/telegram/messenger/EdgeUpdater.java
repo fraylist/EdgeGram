@@ -24,6 +24,7 @@ public class EdgeUpdater {
         public int versionCode;
         public String versionName;
         public String url;
+        public String sha256;
         public String changelog;
         public boolean force;
         public int minVersion;
@@ -72,6 +73,30 @@ public class EdgeUpdater {
         }, "edge-updater").start();
     }
 
+    /** The manifest may carry a plain string or an object {url, sha256}; both are accepted. */
+    private static String readUrl(JSONObject json, String key) {
+        final Object value = json.opt(key);
+        if (value instanceof JSONObject) {
+            return ((JSONObject) value).optString("url", "");
+        }
+        return json.optString(key, "");
+    }
+
+    private static String pickHash(JSONObject json, String chosenUrl, String arm64Url, String universalUrl) {
+        final String[] keys = new String[]{"arm64", "universal"};
+        for (String key : keys) {
+            final Object value = json.opt(key);
+            if (value instanceof JSONObject) {
+                final JSONObject object = (JSONObject) value;
+                final String url = object.optString("url", "");
+                if (url.equals(chosenUrl)) {
+                    return object.optString("sha256", "");
+                }
+            }
+        }
+        return "";
+    }
+
     /** arm64 phones take the small build, everything else falls back to the universal one. */
     private static String pickUrl(String single, String arm64, String universal) {
         boolean isArm64 = false;
@@ -116,9 +141,10 @@ public class EdgeUpdater {
             info.versionCode = json.optInt("versionCode", 0);
             info.versionName = json.optString("versionName", "");
             final String single = json.optString("url", "");
-            final String arm64 = json.optString("arm64", "");
-            final String universal = json.optString("universal", "");
+            final String arm64 = readUrl(json, "arm64");
+            final String universal = readUrl(json, "universal");
             info.url = pickUrl(single, arm64, universal);
+            info.sha256 = pickHash(json, info.url, arm64, universal);
             info.changelog = json.optString("changelog", "");
             info.force = json.optBoolean("force", false);
             info.minVersion = json.optInt("minVersion", 0);
@@ -166,11 +192,42 @@ public class EdgeUpdater {
                         os.write(buffer, 0, read);
                     }
                 }
+                final String expected = info.sha256;
+                if (expected != null && !expected.isEmpty()) {
+                    final String actual = sha256Of(target);
+                    if (actual == null || !actual.equalsIgnoreCase(expected)) {
+                        // never hand a tampered file to the installer
+                        target.delete();
+                        AndroidUtilities.runOnUIThread(() -> android.widget.Toast.makeText(appContext,
+                                EdgeConfig.tr("Update file is corrupted, download cancelled", "Файл обновления повреждён, загрузка отменена"),
+                                android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                }
                 AndroidUtilities.runOnUIThread(() -> install(appContext, target));
             } catch (Throwable e) {
                 FileLog.e(e);
             }
         }, "edge-update-download").start();
+    }
+
+    private static String sha256Of(File file) {
+        try (java.io.FileInputStream is = new java.io.FileInputStream(file)) {
+            final java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            final byte[] buffer = new byte[8192];
+            int read;
+            while ((read = is.read(buffer)) > 0) {
+                digest.update(buffer, 0, read);
+            }
+            final StringBuilder sb = new StringBuilder();
+            for (byte b : digest.digest()) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return null;
+        }
     }
 
     private static void install(Context context, File apk) {
