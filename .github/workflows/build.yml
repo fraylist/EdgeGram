@@ -136,5 +136,4 @@ jobs:
             out/SHA256SUMS.txt
             out/*.sha256
             out/CERTIFICATES.txt
-            out/SHA256SUMS.txt.minisig
           fail_on_unmatched_files: true
