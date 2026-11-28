@@ -67,8 +67,8 @@ public class EdgeKeptDialogs {
     }
 
     public static void unkeep(int account, long did) {
-        EdgeStore.getInstance(account).unkeepDialog(did);
         set(account).remove(did);
+        Utilities.globalQueue.postRunnable(() -> EdgeStore.getInstance(account).unkeepDialog(did));
     }
 
     public static ArrayList<EdgeStore.KeptDialog> list(int account) {
