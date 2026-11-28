@@ -34,7 +34,7 @@ public class EdgeStore {
 
     private static class Helper extends SQLiteOpenHelper {
         Helper(Context context, int account) {
-            super(context, "edgegram_" + account + ".db", null, 2);
+            super(context, "edgegram_" + account + ".db", null, 3);
         }
 
         @Override
@@ -42,10 +42,17 @@ public class EdgeStore {
             db.execSQL("CREATE TABLE IF NOT EXISTS deleted(uid INTEGER, mid INTEGER, date INTEGER, text TEXT, PRIMARY KEY(uid, mid))");
             db.execSQL("CREATE TABLE IF NOT EXISTS edits(uid INTEGER, mid INTEGER, date INTEGER, old_text TEXT, new_text TEXT)");
             db.execSQL("CREATE INDEX IF NOT EXISTS edits_idx ON edits(uid, mid)");
+            db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER)");
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            if (oldVersion < 3) {
+                try {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER)");
+                } catch (Throwable ignore) {
+                }
+            }
             if (oldVersion < 2) {
                 try {
                     db.execSQL("ALTER TABLE deleted ADD COLUMN text TEXT");
@@ -53,6 +60,17 @@ public class EdgeStore {
                 }
             }
         }
+    }
+
+    /** A dialog kept after the server-side removal, so the cached history stays reachable. */
+    public static class KeptDialog {
+        public long did;
+        public int date;
+        public String name;
+        public boolean archived;
+        public int folder;
+        public boolean readOnly;
+        public int top;
     }
 
     private final int account;
@@ -370,4 +388,87 @@ public class EdgeStore {
         }
         return result;
     }
+
+    public synchronized void keepDialog(KeptDialog kept) {
+        if (kept == null || kept.did == 0) {
+            return;
+        }
+        try {
+            db().execSQL("INSERT OR REPLACE INTO kept_dialogs(did, date, name, archived, folder, readonly, top) VALUES(?,?,?,?,?,?,?)",
+                    new Object[]{kept.did, kept.date, kept.name, kept.archived ? 1 : 0, kept.folder, kept.readOnly ? 1 : 0, kept.top});
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public synchronized boolean isKeptDialog(long did) {
+        try {
+            SQLiteDatabase d = db();
+            Cursor c = d.rawQuery("SELECT 1 FROM kept_dialogs WHERE did = " + did, null);
+            boolean found = c.moveToNext();
+            c.close();
+            return found;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return false;
+        }
+    }
+
+    public synchronized void unkeepDialog(long did) {
+        try {
+            db().execSQL("DELETE FROM kept_dialogs WHERE did = " + did);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public synchronized int getKeptDialogsCount() {
+        try {
+            SQLiteDatabase d = db();
+            Cursor c = d.rawQuery("SELECT COUNT(*) FROM kept_dialogs", null);
+            int count = c.moveToNext() ? c.getInt(0) : 0;
+            c.close();
+            return count;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return 0;
+        }
+    }
+
+    public synchronized ArrayList<KeptDialog> getKeptDialogs() {
+        ArrayList<KeptDialog> result = new ArrayList<>();
+        try {
+            SQLiteDatabase d = db();
+            Cursor c = d.rawQuery("SELECT did, date, name, archived, folder, readonly, top FROM kept_dialogs ORDER BY date DESC", null);
+            while (c.moveToNext()) {
+                KeptDialog kept = new KeptDialog();
+                kept.did = c.getLong(0);
+                kept.date = c.getInt(1);
+                kept.name = c.getString(2);
+                kept.archived = c.getInt(3) != 0;
+                kept.folder = c.getInt(4);
+                kept.readOnly = c.getInt(5) != 0;
+                kept.top = c.getInt(6);
+                result.add(kept);
+            }
+            c.close();
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+        return result;
+    }
+
+    public synchronized long getKeptDialogsBytes() {
+        try {
+            SQLiteDatabase d = db();
+            Cursor c = d.rawQuery("SELECT COALESCE(SUM(LENGTH(IFNULL(name,''))),0) FROM kept_dialogs", null);
+            long bytes = c.moveToNext() ? c.getLong(0) : 0;
+            c.close();
+            return bytes;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return 0;
+        }
+    }
+
 }

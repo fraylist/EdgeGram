@@ -9949,6 +9949,31 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    /** EdgeGram: server-forced removals are kept, voluntary leaves and user actions go through. */
+    private void edgeHandleForcedRemoval(TLRPC.Chat chat, TLRPC.Dialog dialog) {
+        if (dialog == null) {
+            return;
+        }
+        final boolean forced = chat != null && (chat.kicked
+                || chat instanceof TLRPC.TL_channelForbidden
+                || chat instanceof TLRPC.TL_chatForbidden);
+        if (EdgeConfig.keepDialogs() && forced) {
+            String title = chat.title;
+            if (title == null || title.trim().isEmpty()) {
+                final TLRPC.Chat cached = getChat(chat.id);
+                title = cached != null ? cached.title : null;
+            }
+            if (title == null || title.trim().isEmpty()) {
+                title = String.valueOf(chat.id);
+            }
+            EdgeKeptDialogs.keep(currentAccount, dialog, title);
+            return;
+        }
+        deleteDialog(dialog.id, 0);
+    }
+
+    private long edgeUserDeleteDialogId;
+
     private void removeDialog(TLRPC.Dialog dialog) {
         if (dialog == null) {
             return;
@@ -10027,10 +10052,18 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void deleteDialog(final long did, int onlyHistory) {
+        edgeUserDeleteDialogId = did;
+        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, did)) {
+            EdgeKeptDialogs.unkeep(currentAccount, did);
+        }
         deleteDialog(did, onlyHistory, false);
     }
 
     public void deleteDialog(final long did, int onlyHistory, boolean revoke) {
+        edgeUserDeleteDialogId = did;
+        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, did)) {
+            EdgeKeptDialogs.unkeep(currentAccount, did);
+        }
         deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0);
     }
 
@@ -10126,6 +10159,13 @@ public class MessagesController extends BaseController implements NotificationCe
         int max_id_delete = max_id;
 
         if (first != 0) {
+            if (EdgeConfig.keepDialogs() && did != edgeUserDeleteDialogId && EdgeKeptDialogs.isKept(currentAccount, did)) {
+                // cached history stays reachable; only an explicit user action removes it
+                return;
+            }
+            if (did == edgeUserDeleteDialogId) {
+                edgeUserDeleteDialogId = 0;
+            }
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("delete dialog with id " + did);
             }
@@ -20447,7 +20487,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             if (dialog == null && chat instanceof TLRPC.TL_channel && !chat.left) {
                                 Utilities.stageQueue.postRunnable(() -> getChannelDifference(update.channel_id, 1, 0, null));
                             } else if (ChatObject.isNotInChat(chat) && dialog != null && (promoDialog == null || promoDialog.id != dialog.id)) {
-                                deleteDialog(dialog.id, 0);
+                                edgeHandleForcedRemoval(chat, dialog);
                             }
                             if (chat instanceof TLRPC.TL_channelForbidden || chat.kicked) {
                                 ChatObject.Call call = getGroupCall(chat.id, false);
@@ -20486,7 +20526,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             TLRPC.Dialog dialog = dialogs_dict.get(-chat.id);
                             if (dialog != null) {
-                                deleteDialog(dialog.id, 0);
+                                edgeHandleForcedRemoval(chat, dialog);
                             }
                         }
                         updateMask |= UPDATE_MASK_CHAT;

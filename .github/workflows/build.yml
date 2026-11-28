@@ -7,16 +7,17 @@ on:
   push:
     tags: ["v*"]
 
+env:
+  NDK_VERSION: "27.2.12479018"
+  CMAKE_VERSION: "3.22.1"
+
 jobs:
-  build:
+  build-arm64:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
+    timeout-minutes: 120
     env:
-      MINISIGN_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+      EDGE_ABI: arm64-v8a
+      EDGE_NAME: arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +43,7 @@ jobs:
       - name: Install SDK packages
         run: |
           yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION" "cmake;$CMAKE_VERSION"
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -50,8 +51,8 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: gradle-${{ runner.os }}-
+          key: gradle-arm64-${{ runner.os }}-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-arm64-${{ runner.os }}-
 
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -59,7 +60,7 @@ jobs:
       - name: Restore signing key
         run: |
           if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "::error::Секрет KEYSTORE_BASE64 не задан. Публичный тестовый ключ из репозитория запрещён: релиз должен быть подписан ключом EdgeGram."
+            echo "::error::Секрет KEYSTORE_BASE64 не задан. Публичный тестовый ключ из репозитория запрещён."
             exit 1
           fi
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
@@ -67,37 +68,143 @@ jobs:
           sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
           sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
 
-      - name: Build arm64
+      - name: Build ${{ env.EDGE_NAME }}
         run: |
           chmod +x gradlew
           mkdir -p out
-          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=arm64-v8a --no-daemon --stacktrace
-          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-arm64.apk"
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=$EDGE_ABI --no-daemon --stacktrace
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-$EDGE_NAME.apk"
 
-      - name: Build universal
+      - name: Upload ${{ env.EDGE_NAME }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ env.EDGE_NAME }}
+          path: out/*.apk
+          if-no-files-found: error
+
+  build-universal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EDGE_ABI: armeabi-v7a,arm64-v8a,x86,x86_64
+      EDGE_NAME: universal
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
         run: |
-          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=armeabi-v7a,arm64-v8a,x86,x86_64 --no-daemon --stacktrace
-          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-universal.apk"
+          SDK="$HOME/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          curl -sSLo /tmp/cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdline.zip -d "$SDK/cmdline-tools"
+          mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+      - name: Install SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION" "cmake;$CMAKE_VERSION"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-universal-${{ runner.os }}-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-universal-${{ runner.os }}-
+
+      - name: Write local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Restore signing key
+        run: |
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "::error::Секрет KEYSTORE_BASE64 не задан. Публичный тестовый ключ из репозитория запрещён."
+            exit 1
+          fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/edgegram.keystore
+          sed -i "s/^RELEASE_STORE_PASSWORD=.*/RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}/" gradle.properties
+          sed -i "s/^RELEASE_KEY_ALIAS=.*/RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}/" gradle.properties
+          sed -i "s/^RELEASE_KEY_PASSWORD=.*/RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}/" gradle.properties
+
+      - name: Build ${{ env.EDGE_NAME }}
+        run: |
+          chmod +x gradlew
+          mkdir -p out
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PedgeAbi=$EDGE_ABI --no-daemon --stacktrace
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "out/EdgeGram-${{ github.ref_name }}-$EDGE_NAME.apk"
+
+      - name: Upload ${{ env.EDGE_NAME }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ env.EDGE_NAME }}
+          path: out/*.apk
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-arm64, build-universal]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      MINISIGN_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Setup Android SDK
+        run: |
+          SDK="$HOME/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          curl -sSLo /tmp/cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdline.zip -d "$SDK/cmdline-tools"
+          mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0"
 
       - name: Checksums and certificate fingerprints
         run: |
           cd out
           sha256sum *.apk > SHA256SUMS.txt
           for f in *.apk; do sha256sum "$f" > "$f.sha256"; done
-          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | head -1)
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | head -1)
           if [ -z "$APKSIGNER" ]; then echo "::error::apksigner не найден"; exit 1; fi
           for f in *.apk; do
+            echo "$f:" >> CERTIFICATES.txt
             "$APKSIGNER" verify --print-certs "$f" | grep -E "certificate DN|certificate SHA-256" >> CERTIFICATES.txt
           done
           cat CERTIFICATES.txt
           cat SHA256SUMS.txt
+          if ! grep -q "5a85ecbaafba76b8954c4e188d9a12d8dbde5f90f266f9101a267680f65ff54b" CERTIFICATES.txt; then
+            echo "::error::Отпечаток не совпадает с ключом EdgeGram — сборка подписана не тем ключом."
+            exit 1
+          fi
 
       - name: Sign checksums (optional)
         if: env.MINISIGN_KEY != ''
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq minisign
           mkdir -p "$HOME/.minisign"
-          echo "${{ secrets.MINISIGN_SECRET_KEY }}" | base64 -d > "$HOME/.minisign/minisign.key"
+          echo "$MINISIGN_KEY" | base64 -d > "$HOME/.minisign/minisign.key"
           minisign -S -s "$HOME/.minisign/minisign.key" -m out/SHA256SUMS.txt -x out/SHA256SUMS.txt.minisig -W
           rm -f "$HOME/.minisign/minisign.key"
           cat out/SHA256SUMS.txt.minisig
@@ -105,29 +212,15 @@ jobs:
       - name: Note missing signature key
         if: env.MINISIGN_KEY == ''
         run: |
-          echo "::warning::MINISIGN_SECRET_KEY не задан: SHA256SUMS.txt опубликован без подписи. Хэши и сертификат проверяются и так."
+          echo "::warning::MINISIGN_SECRET_KEY не задан: SHA256SUMS.txt опубликован без подписи."
 
       - name: Build provenance attestation
-        if: startsWith(github.ref, 'refs/tags/')
         continue-on-error: true
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: out/*.apk
 
-      - name: Upload APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: EdgeGram-${{ github.ref_name }}
-          path: |
-            out/*.apk
-            out/SHA256SUMS.txt
-            out/*.sha256
-            out/CERTIFICATES.txt
-            out/*.minisig
-          if-no-files-found: error
-
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           name: EdgeGram ${{ github.ref_name }}

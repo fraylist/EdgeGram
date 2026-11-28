@@ -94,6 +94,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_LOCK_SEARCH = 72;
     private static final int ID_WAKE_LOCK = 73;
     private static final int ID_PIN_SCRAMBLE = 74;
+    private static final int ID_KEEP_DIALOGS = 75;
+    private static final int ID_KEPT_DIALOGS = 76;
     private static final int ID_BACKUP_EXPORT = 47;
     private static final int ID_BACKUP_IMPORT = 48;
     private static final int REQ_BACKUP_EXPORT = 4201;
@@ -272,6 +274,10 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(t("Spy mode", "Режим шпиона")));
         items.add(check(ID_KEEP_DELETED, t("Keep deleted messages", "Сохранять удалённые сообщения"),
                 t("They stay in the chat with a mark", "Остаются в чате с пометкой"), EdgeConfig.keepDeleted()));
+        items.add(check(ID_KEEP_DIALOGS, t("Keep deleted chats", "Сохранять удалённые чаты"),
+                t("Deleted channels and groups stay in the list, history opens read-only",
+                        "Удалённые каналы и группы остаются в списке, история открывается только для чтения"),
+                org.telegram.messenger.EdgeConfig.keepDialogs()));
         items.add(check(ID_KEEP_EDITS, t("Keep edit history", "Сохранять историю правок"),
                 t("Long-press an edited message \u2192 \"Edit history\"", "Долгое нажатие на изменённое сообщение \u2192 «История правок»"), EdgeConfig.keepEdits()));
         items.add(UItem.asShadow(null));
@@ -884,6 +890,11 @@ public class EdgeSettingsActivity extends UniversalFragment {
         if (item.id >= ID_HIDDEN_BASE && item.id < ID_HIDDEN_BASE + org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT) {
             final int account = item.id - ID_HIDDEN_BASE;
             org.telegram.messenger.EdgeConfig.setAccountHidden(account, !org.telegram.messenger.EdgeConfig.isAccountHidden(account));
+            refreshViews();
+            return;
+        }
+        if (item.id == ID_KEEP_DIALOGS) {
+            org.telegram.messenger.EdgeConfig.toggle(org.telegram.messenger.EdgeConfig.KEEP_DIALOGS, false);
             refreshViews();
             return;
         }
