@@ -38,6 +38,11 @@ public class EdgeKeptDialogs {
                     map.put(loaded.get(i).did, loaded.get(i));
                 }
             }
+            if (!loaded.isEmpty() && EdgeConfig.keepDialogs()) {
+                // the list may have been rebuilt before the load finished
+                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account)
+                        .postNotificationName(NotificationCenter.dialogsNeedReload));
+            }
         });
     }
 

@@ -22583,6 +22583,22 @@ public class MessagesController extends BaseController implements NotificationCe
             if (dialogs_dict.get(record.did) != null) {
                 continue;
             }
+            MessageObject topMessage = null;
+            final ArrayList<MessageObject> cached = dialogMessage.get(record.did);
+            if (cached != null) {
+                for (int j = 0; j < cached.size(); j++) {
+                    if (cached.get(j).getId() == record.top) {
+                        topMessage = cached.get(j);
+                        break;
+                    }
+                }
+            }
+            if (topMessage == null) {
+                // dead top_message: nothing to show, do not resurrect an empty dialog
+                continue;
+            }
+            final TLRPC.Chat chat = record.did < 0 ? getChat(-record.did) : null;
+            final boolean isChannel = chat != null && ChatObject.isChannel(chat);
             final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
             dialog.id = record.did;
             dialog.top_message = record.top;
@@ -22590,6 +22606,21 @@ public class MessagesController extends BaseController implements NotificationCe
             dialog.unread_count = 0;
             dialog.read_inbox_max_id = 0;
             dialog.read_outbox_max_id = 0;
+            dialog.flags = isChannel ? 1 : 0;
+            if (record.did > 0) {
+                final TLRPC.TL_peerUser peerUser = new TLRPC.TL_peerUser();
+                peerUser.user_id = record.did;
+                dialog.peer = peerUser;
+            } else if (isChannel) {
+                final TLRPC.TL_peerChannel peerChannel = new TLRPC.TL_peerChannel();
+                peerChannel.channel_id = -record.did;
+                dialog.peer = peerChannel;
+            } else {
+                final TLRPC.TL_peerChat peerChat = new TLRPC.TL_peerChat();
+                peerChat.chat_id = -record.did;
+                dialog.peer = peerChat;
+            }
+            dialog.last_message_date = topMessage.messageOwner.date;
             dialogs_dict.put(record.did, dialog);
             allDialogs.add(dialog);
         }
