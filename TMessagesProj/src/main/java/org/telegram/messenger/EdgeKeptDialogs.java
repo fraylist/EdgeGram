@@ -4,56 +4,54 @@ import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 
-/** Keeps dialogs that the server removed (channel deleted, kicked) so their cached history stays readable. */
+/**
+ * Dialogs the server removed (channel deleted, kicked) while their cached history stays readable.
+ * Metadata lives in memory so neither the dialog list nor the passcode screen ever waits for SQLite.
+ */
 public class EdgeKeptDialogs {
 
-    private static final HashMap<Integer, HashSet<Long>> cache = new HashMap<>();
+    private static final HashMap<Integer, LinkedHashMap<Long, EdgeStore.KeptDialog>> cache = new HashMap<>();
 
-    /** Never touches the database on the caller thread: the list is preloaded in the background. */
-    private static HashSet<Long> set(int account) {
-        synchronized (cache) {
-            HashSet<Long> ids = cache.get(account);
-            if (ids == null) {
-                ids = new HashSet<>();
-                cache.put(account, ids);
-                preload(account);
-            }
-            return ids;
+    private static LinkedHashMap<Long, EdgeStore.KeptDialog> map(int account) {
+        LinkedHashMap<Long, EdgeStore.KeptDialog> map = cache.get(account);
+        if (map == null) {
+            map = new LinkedHashMap<>();
+            cache.put(account, map);
+            preload(account);
         }
+        return map;
     }
 
+    /** Loads the list once in the background, right after the accounts are initialised. */
     public static void preload(final int account) {
         Utilities.globalQueue.postRunnable(() -> {
-            final HashSet<Long> loaded = new HashSet<>();
-            for (EdgeStore.KeptDialog kept : EdgeStore.getInstance(account).getKeptDialogs()) {
-                loaded.add(kept.did);
-            }
+            final ArrayList<EdgeStore.KeptDialog> loaded = EdgeStore.getInstance(account).getKeptDialogs();
             synchronized (cache) {
-                HashSet<Long> ids = cache.get(account);
-                if (ids == null) {
-                    ids = new HashSet<>();
-                    cache.put(account, ids);
+                LinkedHashMap<Long, EdgeStore.KeptDialog> map = cache.get(account);
+                if (map == null) {
+                    map = new LinkedHashMap<>();
+                    cache.put(account, map);
                 }
-                ids.addAll(loaded);
+                for (int i = 0; i < loaded.size(); i++) {
+                    map.put(loaded.get(i).did, loaded.get(i));
+                }
             }
         });
     }
 
     public static boolean isKept(int account, long did) {
-        return set(account).contains(did);
+        synchronized (cache) {
+            return map(account).containsKey(did);
+        }
     }
 
     public static void keep(int account, TLRPC.Dialog dialog, String name) {
-        if (dialog == null || dialog.id == 0 || !EdgeConfig.keepDialogs()) {
+        if (dialog == null || dialog.id == 0 || !EdgeConfig.keepDialogs() || dialog.top_message <= 0) {
             return;
         }
-        // no cached messages means restoring is pointless
-        if (dialog.top_message <= 0) {
-            return;
-        }
-        EdgeStore.KeptDialog kept = new EdgeStore.KeptDialog();
+        final EdgeStore.KeptDialog kept = new EdgeStore.KeptDialog();
         kept.did = dialog.id;
         kept.date = (int) (System.currentTimeMillis() / 1000);
         kept.name = name;
@@ -61,17 +59,23 @@ public class EdgeKeptDialogs {
         kept.folder = dialog.folder_id;
         kept.readOnly = true;
         kept.top = dialog.top_message;
-        set(account).add(dialog.id);
+        synchronized (cache) {
+            map(account).put(kept.did, kept);
+        }
         Utilities.globalQueue.postRunnable(() -> EdgeStore.getInstance(account).keepDialog(kept));
         FileLog.d("edge keep dialog " + dialog.id);
     }
 
     public static void unkeep(int account, long did) {
-        set(account).remove(did);
+        synchronized (cache) {
+            map(account).remove(did);
+        }
         Utilities.globalQueue.postRunnable(() -> EdgeStore.getInstance(account).unkeepDialog(did));
     }
 
     public static ArrayList<EdgeStore.KeptDialog> list(int account) {
-        return EdgeStore.getInstance(account).getKeptDialogs();
+        synchronized (cache) {
+            return new ArrayList<>(map(account).values());
+        }
     }
 }

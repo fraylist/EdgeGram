@@ -1555,6 +1555,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public MessagesController(int num) {
         super(num);
+        EdgeKeptDialogs.preload(currentAccount);
         ImageLoader.getInstance();
         getMessagesStorage();
         getLocationController();
@@ -22571,7 +22572,31 @@ public class MessagesController extends BaseController implements NotificationCe
     }
     
     
+    /** EdgeGram: brings kept dialogs back into the list after a re-sync. Idempotent, local only. */
+    private void edgeRestoreKeptDialogs() {
+        if (!EdgeConfig.keepDialogs()) {
+            return;
+        }
+        final ArrayList<EdgeStore.KeptDialog> kept = EdgeKeptDialogs.list(currentAccount);
+        for (int i = 0; i < kept.size(); i++) {
+            final EdgeStore.KeptDialog record = kept.get(i);
+            if (dialogs_dict.get(record.did) != null) {
+                continue;
+            }
+            final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
+            dialog.id = record.did;
+            dialog.top_message = record.top;
+            dialog.folder_id = record.folder;
+            dialog.unread_count = 0;
+            dialog.read_inbox_max_id = 0;
+            dialog.read_outbox_max_id = 0;
+            dialogs_dict.put(record.did, dialog);
+            allDialogs.add(dialog);
+        }
+    }
+
     public void sortDialogs(LongSparseArray<TLRPC.Chat> chatsDict) {
+        edgeRestoreKeptDialogs();
         if (chatsDict == null && ApplicationLoader.mainInterfacePaused) {
             return;
         }
