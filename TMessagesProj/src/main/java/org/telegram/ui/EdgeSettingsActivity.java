@@ -468,6 +468,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
         items.add(UItem.asCustomShadow(listPreview, 80));
         items.add(UItem.asShadow(t("This is how your chat list looks with the current settings.", "Так выглядит ваш список чатов с текущими настройками.")));
         items.add(UItem.asHeader(t("Privacy", "Приватность")));
+        items.add(check(ID_PIN_SCRAMBLE, t("Shuffle PIN keypad", "Перемешивать цифры PIN"),
+                t("Digits change places every time the passcode screen opens", "Цифры меняются местами при каждом открытии экрана кода"),
+                org.telegram.messenger.EdgeConfig.pinScramble()));
         items.add(check(ID_HIDE_PHONE, t("Hide my phone number", "Скрывать мой номер телефона"),
                 t("Masks the number in settings and profile", "Скрывает номер в настройках и профиле"), EdgeConfig.hidePhone()));
         items.add(UItem.asShadow(null));
@@ -648,9 +651,6 @@ public class EdgeSettingsActivity extends UniversalFragment {
         }
         items.add(UItem.asShadow(null));
 
-        items.add(check(ID_PIN_SCRAMBLE, t("Shuffle PIN keypad", "Перемешивать цифры PIN"),
-                t("Digits change places every time the passcode screen opens", "Цифры меняются местами при каждом открытии экрана кода"),
-                org.telegram.messenger.EdgeConfig.pinScramble()));
         items.add(UItem.asHeader(t("Hidden passcode", "Код скрытого режима")));
         items.add(UItem.asButton(ID_DURESS, t("Hidden mode code", "Код скрытого режима"),
                 org.telegram.messenger.EdgeConfig.hasDuressCode() ? t("Set", "Задан") : t("Not set", "Не задан")));
