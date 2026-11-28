@@ -1450,31 +1450,17 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 hasFingerprint ? R.string.EnterPINorFingerprint : R.string.EnterPIN));
     }
 
-    /**
-     * EdgeGram: re-lays the lock-screen keypad digits. The click handler reads the digit from the
-     * button tag, so setNum(), setTag() and contentDescription are always updated together.
-     */
     private void applyPinScramble() {
-        if (numberFrameLayouts == null || numberFrameLayouts.size() < 10) {
-            return;
-        }
-        final java.util.ArrayList<Integer> digits = new java.util.ArrayList<>();
-        for (int d = 0; d < 10; d++) {
-            digits.add(d);
-        }
-        if (org.telegram.messenger.EdgeConfig.pinScramble()) {
-            java.util.Collections.shuffle(digits, new java.util.Random());
-        }
+        if (!org.telegram.messenger.EdgeConfig.pinScramble()) return;
+        java.util.ArrayList<Integer> digits = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) digits.add(i);
+        java.util.Collections.shuffle(digits, new java.util.Random());
         for (int i = 0; i < 10; i++) {
-            final View frame = numberFrameLayouts.get(i);
-            if (!(frame instanceof PasscodeButton)) {
-                continue;
-            }
-            final int digit = digits.get(i);
-            final PasscodeButton button = (PasscodeButton) frame;
-            button.setNum(digit);
-            button.setTag(digit);
-            button.setContentDescription(String.valueOf(digit));
+            FrameLayout f = numberFrameLayouts.get(i);
+            int d = digits.get(i);
+            f.setTag(d);
+            if (f instanceof PasscodeButton) ((PasscodeButton) f).setNum(d);
+            f.setContentDescription(String.valueOf(d));
         }
     }
 
