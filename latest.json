@@ -1,7 +1,7 @@
 {
   "versionCode": 73159,
   "versionName": "13.2.2 r15",
-  "changelog": "• Перемешивание цифр PIN на экране блокировки• Проверка SHA-256 скачанного APK• SHA256SUMS.txt и CERTIFICATES.txt в релизе",
+  "changelog": "• Перемешивание цифр PIN на экране блокировки\n• Проверка SHA-256 скачанного APK\n• SHA256SUMS.txt и CERTIFICATES.txt в релизе",
   "force": false,
   "minVersion": 73120,
   "arm64": {
