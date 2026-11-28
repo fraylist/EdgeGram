@@ -25,7 +25,7 @@ public class EdgeKeptDialogs {
     }
 
     public static void preload(final int account) {
-        Utilities.storageQueue.postRunnable(() -> {
+        Utilities.globalQueue.postRunnable(() -> {
             final HashSet<Long> loaded = new HashSet<>();
             for (EdgeStore.KeptDialog kept : EdgeStore.getInstance(account).getKeptDialogs()) {
                 loaded.add(kept.did);
@@ -62,7 +62,7 @@ public class EdgeKeptDialogs {
         kept.readOnly = true;
         kept.top = dialog.top_message;
         set(account).add(dialog.id);
-        Utilities.storageQueue.postRunnable(() -> EdgeStore.getInstance(account).keepDialog(kept));
+        Utilities.globalQueue.postRunnable(() -> EdgeStore.getInstance(account).keepDialog(kept));
         FileLog.d("edge keep dialog " + dialog.id);
     }
 
