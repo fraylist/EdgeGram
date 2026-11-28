@@ -11683,4 +11683,5 @@
     <string name="EdgeKeptChatsEmpty">Nothing saved yet. Deleted channels and groups you were kicked from will appear here.</string>
     <string name="EdgeKeptChatsSummary">Saved: %1$d</string>
     <string name="EdgeKeptDeleteForever">Delete forever</string>
+    <string name="EdgeKeptDeleteConfirm">Saved history will be deleted permanently</string>
 </resources>

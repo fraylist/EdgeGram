@@ -104,8 +104,21 @@ public class EdgeKeptChatsActivity extends BaseFragment {
             delete.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
             delete.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(6), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
             delete.setOnClickListener(v -> {
-                MessagesController.getInstance(currentAccount).deleteDialog(record.did, 0);
-                rebuild(list, context);
+                if (getParentActivity() == null) {
+                    return;
+                }
+                org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString(R.string.EdgeKeptDeleteForever));
+                builder.setMessage(LocaleController.getString(R.string.EdgeKeptDeleteConfirm));
+                builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, which) -> {
+                    MessagesController.getInstance(currentAccount).deleteDialog(record.did, 0);
+                    rebuild(list, context);
+                });
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                org.telegram.ui.ActionBar.AlertDialog dialog = builder.create();
+                dialog.show();
+                ((android.widget.TextView) dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)).setTextColor(
+                        Theme.getColor(Theme.key_text_RedBold));
             });
             row.addView(delete, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 

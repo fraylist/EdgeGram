@@ -267,4 +267,5 @@
     <string name="EdgeKeptChatsEmpty">Пока пусто. Сюда попадают удалённые каналы и группы, из которых вас исключили.</string>
     <string name="EdgeKeptChatsSummary">Сохранено: %1$d</string>
     <string name="EdgeKeptDeleteForever">Удалить окончательно</string>
+    <string name="EdgeKeptDeleteConfirm">Сохранённая история будет удалена безвозвратно</string>
 </resources>
