@@ -104,7 +104,8 @@ jobs:
 
       - name: Note missing signature key
         if: env.MINISIGN_KEY == ''
-        run: echo "::warning::MINISIGN_SECRET_KEY не задан: SHA256SUMS.txt опубликован без подписи. Хэши и сертификат проверяются и так."
+        run: |
+          echo "::warning::MINISIGN_SECRET_KEY не задан: SHA256SUMS.txt опубликован без подписи. Хэши и сертификат проверяются и так."
 
       - name: Build provenance attestation
         if: startsWith(github.ref, 'refs/tags/')
