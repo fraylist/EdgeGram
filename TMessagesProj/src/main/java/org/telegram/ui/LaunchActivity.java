@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeKeepAliveService;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -417,8 +420,21 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         instance = this;
         ApplicationLoader.postInitApplication();
+        if (EdgeConfig.keepAlive()) {
+            EdgeKeepAliveService.start(this);
+        }
+        checkEdgeUpdates();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
+        if (SharedConfig.appLocked) {
+            org.telegram.messenger.EdgeConfig.duressSession = false;
+            org.telegram.messenger.EdgeConfig.forgetUnlockedChats();
+        }
+        if (org.telegram.messenger.EdgeConfig.isAccountHidden(currentAccount)) {
+            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        }
         if (BuildVars.DEBUG_VERSION || BuildVars.DEBUG_PRIVATE_VERSION) {
             registerDebugThemeReceiver();
         }
@@ -7205,6 +7221,25 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     View feedbackView;
+
+    private void checkEdgeUpdates() {
+        final long now = System.currentTimeMillis();
+        final String stored = org.telegram.messenger.EdgeConfig.getString("lastUpdateCheck", "");
+        long last = 0;
+        try {
+            last = stored.isEmpty() ? 0 : Long.parseLong(stored);
+        } catch (Throwable ignore) {
+        }
+        if (now - last < 24L * 60L * 60L * 1000L) {
+            return;
+        }
+        org.telegram.messenger.EdgeConfig.setString("lastUpdateCheck", String.valueOf(now));
+        org.telegram.messenger.EdgeUpdater.check(this, (info, upToDate) -> {
+            if (info != null && !upToDate) {
+                org.telegram.messenger.EdgeUpdater.showDialog(LaunchActivity.this, info);
+            }
+        });
+    }
 
     @Override
     protected void onResume() {

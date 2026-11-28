@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.EdgeConfig;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.LocaleController.getString;
@@ -529,6 +531,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     protected RLottieDrawable overrideSwipeActionDrawable;
 
     private int thumbsCount;
+    private AvatarSpan senderAvatarSpan;
     private boolean hasVideoThumb;
     private Paint thumbBackgroundPaint;
     private boolean[] thumbImageSeen = new boolean[3];
@@ -1846,6 +1849,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 user != null && user.id == UserObject.VERIFY && message != null && message.getForwardedFromId() != null
                             ) {
                                 messageNameString = AndroidUtilities.escape(triedMessageName != null ? triedMessageName : getMessageNameString());
+                                messageNameString = addSenderAvatar(messageNameString, message);
                                 if (chat != null && chat.forum && !isTopic && !useFromUserAsAvatar) {
                                     CharSequence topicName = MessagesController.getInstance(currentAccount).getTopicsController().getTopicIconName(chat, message, currentMessagePaint);
                                     if (!TextUtils.isEmpty(topicName)) {
@@ -5733,8 +5737,27 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         return captionMessage;
     }
 
+    private CharSequence addSenderAvatar(CharSequence messageNameString, MessageObject message) {
+        if (EdgeConfig.miniSenderAvatar() && !TextUtils.isEmpty(messageNameString) && message != null) {
+            final long fromChatId = message.getFromChatId();
+            if (fromChatId != 0 && fromChatId != UserConfig.getInstance(currentAccount).getClientUserId()) {
+                if (senderAvatarSpan == null) {
+                    senderAvatarSpan = new AvatarSpan(this, currentAccount);
+                    senderAvatarSpan.needDrawShadow = false;
+                }
+                senderAvatarSpan.setDialogId(fromChatId);
+                SpannableStringBuilder builder = new SpannableStringBuilder("\u200B ");
+                builder.setSpan(senderAvatarSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.append(messageNameString);
+                return builder;
+            }
+        }
+        return messageNameString;
+    }
+
     public void updateMessageThumbs() {
-        if (message == null) {
+        if (message == null || !EdgeConfig.mediaPreview()) {
+            thumbsCount = 0;
             return;
         }
         String restrictionReason = MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason);

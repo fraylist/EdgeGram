@@ -135,6 +135,8 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
         }
     }
 
+    private final android.graphics.Paint attachBubblePaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
     private final Path underKeyboardPath = new Path();
 
     private int currentBlurredHeight;
@@ -223,6 +225,15 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
         checkBlurredHeight(false);
     }
 
+    private int inputTopExtra;
+    /** Height taken by the reply/edit bar above the field, so the bubble stays the field's size. */
+    public void setInputTopExtra(int extra) {
+        if (inputTopExtra != extra) {
+            inputTopExtra = extra;
+            invalidate();
+        }
+    }
+
     public void setInputBubbleOffsets(float left, float right) {
         inputBubbleOffsetLeft = left;
         inputBubbleOffsetRight = right;
@@ -266,18 +277,24 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
 
         final int blurTop = getMeasuredHeight() - currentBlurredHeight;
 
-        tmpRect.set(
-            Math.round(inputBubbleOffsetLeft),
-            0,
-            getMeasuredWidth() - Math.round(inputBubbleOffsetRight),
-            inputBubbleHeightRound
-        );
-        tmpRect.inset(0, -dp(7));
-        tmpRect.offset(0, blurTop + (int) bubbleInputTranlationY);
+        final boolean edgeIosPanel = org.telegram.messenger.EdgeConfig.iosPanel();
+        if (edgeIosPanel) {
+            // the field draws its own bubble, so the island must not paint anything here:
+            // otherwise the bubble stretches over the reply bar when it appears
+        } else {
+            tmpRect.set(
+                Math.round(inputBubbleOffsetLeft),
+                0,
+                getMeasuredWidth() - Math.round(inputBubbleOffsetRight),
+                inputBubbleHeightRound
+            );
+            tmpRect.inset(0, -dp(7));
+            tmpRect.offset(0, blurTop + (int) bubbleInputTranlationY);
 
-        blurredBackgroundDrawable.setBounds(tmpRect);
-        if (drawInputBackground)
-            blurredBackgroundDrawable.draw(canvas);
+            blurredBackgroundDrawable.setBounds(tmpRect);
+            if (drawInputBackground)
+                blurredBackgroundDrawable.draw(canvas);
+        }
 
         if (needDrawInAppKeyboard) {
             underKeyboardBackgroundDrawable.draw(canvas);

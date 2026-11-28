@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import org.telegram.messenger.EdgeConfig;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -6941,9 +6943,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private void updateSnowflakes() {
+        if (fragmentView == null || !(fragmentView instanceof android.view.ViewGroup)) {
+            return;
+        }
+        final android.view.ViewGroup root = (android.view.ViewGroup) fragmentView;
+        final android.view.View existing = root.findViewWithTag("edge_snow");
+        if (org.telegram.messenger.EdgeConfig.snowflakes()) {
+            if (existing == null) {
+                final org.telegram.ui.Components.EdgeSnowView snow = new org.telegram.ui.Components.EdgeSnowView(getContext());
+                snow.setTag("edge_snow");
+                root.addView(snow, org.telegram.ui.Components.LayoutHelper.createFrame(
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT,
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT));
+            }
+        } else if (existing != null && existing.getParent() != null) {
+            ((android.view.ViewGroup) existing.getParent()).removeView(existing);
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        updateSnowflakes();
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -13427,7 +13449,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
-        if (getUserConfig().showCallsTab) {
+        if (getUserConfig().showCallsTab || EdgeConfig.hideBottomTabs()) {
             io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
                 presentFragment(new SettingsActivity());
             });

@@ -2019,6 +2019,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public void sendScreenshotMessage(TLRPC.User user, int messageId, TLRPC.Message resendMessage) {
+        if (EdgeConfig.secretFree()) {
+            return;
+        }
         if (user == null || messageId == 0 || user.id == getUserConfig().getClientUserId()) {
             return;
         }
@@ -4439,6 +4442,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public void sendMessage(SendMessageParams sendMessageParams) {
+        if (EdgeConfig.ghostRead() && EdgeConfig.ghostOnAction() && sendMessageParams != null && sendMessageParams.peer != 0) {
+            EdgeConfig.allowReadNow();
+            final long dialogForRead = sendMessageParams.peer;
+            AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).edgeReadDialogNow(dialogForRead), 60);
+        }
         final SendMessageChatArguments sendMessageChatArguments = sendMessageParams.sendMessageChatArguments != null ?
                 sendMessageParams.sendMessageChatArguments : SendMessageChatArguments.EMPTY;
         String message = sendMessageParams.message;

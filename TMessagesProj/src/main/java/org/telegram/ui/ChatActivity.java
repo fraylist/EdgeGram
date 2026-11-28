@@ -177,6 +177,8 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeStore;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
@@ -1297,6 +1299,9 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_WELCOME_REVERT = 116;
     public final static int OPTION_SEND_MONEY = 117;
     public final static int OPTION_STOP_LIVE_LOCATION = 118;
+    public final static int OPTION_MASHA_EDITS = 119;
+    public final static int OPTION_MASHA_STT = 120;
+    public final static int OPTION_MASHA_DETAILS = 121;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -1705,6 +1710,8 @@ public class ChatActivity extends BaseFragment implements
 
 
     private final static int view_as_topics = 59;
+    private final static int chat_menu_edge_download = 2001;
+    private final static int chat_menu_edge_lock = 2002;
 
     private final static int search = 40;
 
@@ -2904,6 +2911,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
+            .add(NotificationCenter.edgeMessagesDeleted)
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -3738,6 +3746,17 @@ public class ChatActivity extends BaseFragment implements
                             finishFragment();
                         }
                     }
+                } else if (id == chat_menu_edge_download) {
+                    EdgeDownloader.show(ChatActivity.this, messages);
+                } else if (id == chat_menu_edge_lock) {
+                    final boolean locked = !EdgeConfig.isChatLocked(currentAccount, dialog_id);
+                    EdgeConfig.setChatLocked(currentAccount, dialog_id, locked);
+                    if (locked) {
+                        EdgeConfig.markChatUnlocked(currentAccount, dialog_id);
+                    }
+                    android.widget.Toast.makeText(getParentActivity(), locked
+                            ? EdgeConfig.tr("Chat is locked: biometrics required on next open", "Чат заблокирован: при следующем открытии нужна биометрия")
+                            : EdgeConfig.tr("Chat lock removed", "Блокировка чата снята"), android.widget.Toast.LENGTH_SHORT).show();
                 } else if (id == view_as_topics) {
                     if (getUserConfig().getClientUserId() == dialog_id) {
                         getMessagesController().setSavedViewAs(true);
@@ -4291,7 +4310,8 @@ public class ChatActivity extends BaseFragment implements
             });
             otherIcon.addView(headerItem.getIconView());
             headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
-
+            headerItem.lazilyAddSubItem(chat_menu_edge_download, R.drawable.msg_download, EdgeConfig.tr("Download everything", "Скачать всё из чата"));
+            
             if (currentUser != null && currentUser.self && chatMode != MODE_SAVED) {
                 savedChatsItem = headerItem.lazilyAddSubItem(view_as_topics, R.drawable.msg_topics, LocaleController.getString(R.string.SavedViewAsChats));
                 savedChatsGap = headerItem.lazilyAddColoredGap();
@@ -4471,6 +4491,7 @@ public class ChatActivity extends BaseFragment implements
             updateTopicsPanelItem();
             otherIcon.addView(headerItem.getIconView());
             headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            headerItem.lazilyAddSubItem(chat_menu_edge_download, R.drawable.msg_download, EdgeConfig.tr("Download everything", "Скачать всё из чата"));
 
             headerItem.lazilyAddSubItem(copy_business_link, R.drawable.msg_copy, getString(R.string.Copy));
             headerItem.lazilyAddSubItem(share_business_link, R.drawable.msg_share, getString(R.string.LinkActionShare));
@@ -6859,6 +6880,13 @@ public class ChatActivity extends BaseFragment implements
                         wasManualScroll = true;
                         scrollingChatListView = true;
                     } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                        if (EdgeConfig.hideKeyboardOnScroll()) {
+                            if (isKeyboardVisible()) {
+                                AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                            } else if (chatActivityEnterView != null) {
+                                chatActivityEnterView.hidePopup(true);
+                            }
+                        }
                         pollHintCell = null;
                         wasManualScroll = true;
                         scrollingFloatingDate = true;
@@ -8726,7 +8754,7 @@ public class ChatActivity extends BaseFragment implements
         chatScrollHelper.setAnimationCallback(chatScrollHelperCallback);
 
         flagSecure = new FlagSecureReason(getParentActivity().getWindow(), () ->
-            currentEncryptedChat != null ||
+            (currentEncryptedChat != null && !EdgeConfig.secretFree()) ||
             isPeerNoForwards()
         );
 
@@ -16248,6 +16276,9 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private Runnable sendSecretMessageRead(MessageObject messageObject, boolean readNow) {
+        if (EdgeConfig.keepTtl()) {
+            return null;
+        }
         if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.destroyTime != 0 || messageObject.messageOwner.ttl <= 0) {
             return null;
         }
@@ -16277,7 +16308,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private Runnable sendSecretMediaDelete(MessageObject messageObject) {
-        if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.ttl != 0x7FFFFFFF) {
+        if (EdgeConfig.keepTtl() || messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.ttl != 0x7FFFFFFF) {
             return null;
         }
         final long taskId = getMessagesController().createDeleteShowOnceTask(dialog_id, messageObject.getId());
@@ -23106,6 +23137,18 @@ public class ChatActivity extends BaseFragment implements
             removeUnreadPlane(true);
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
+            }
+        } else if (id == NotificationCenter.edgeMessagesDeleted) {
+            long did = (Long) args[0];
+            ArrayList<Integer> mids = (ArrayList<Integer>) args[1];
+            if (did == dialog_id && mids != null && chatAdapter != null) {
+                for (int mid : mids) {
+                    MessageObject msg = messagesDict[0].get(mid);
+                    if (msg != null) {
+                        msg.forceUpdate = true;
+                        chatAdapter.updateRowWithMessageObject(msg, false, false);
+                    }
+                }
             }
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];
@@ -30656,9 +30699,31 @@ public class ChatActivity extends BaseFragment implements
 
     Bulletin.Delegate bulletinDelegate;
 
+    private void updateSnowflakes() {
+        if (contentView == null) {
+            return;
+        }
+        final android.view.View existing = contentView.findViewWithTag("edge_snow");
+        if (org.telegram.messenger.EdgeConfig.snowflakes()) {
+            if (existing == null) {
+                final org.telegram.ui.Components.EdgeSnowView snow = new org.telegram.ui.Components.EdgeSnowView(getContext());
+                snow.setTag("edge_snow");
+                contentView.addView(snow, org.telegram.ui.Components.LayoutHelper.createFrame(
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT,
+                        org.telegram.ui.Components.LayoutHelper.MATCH_PARENT));
+            }
+        } else if (existing != null && existing.getParent() != null) {
+            ((android.view.ViewGroup) existing.getParent()).removeView(existing);
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        updateSnowflakes();
+        if (contentView != null) {
+            EdgeChatLock.apply(this, contentView, currentAccount, dialog_id, null);
+        }
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
@@ -30874,6 +30939,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onPause() {
+        if (EdgeConfig.isChatLocked(currentAccount, dialog_id)) {
+            EdgeConfig.lockChatAgain(currentAccount, dialog_id);
+        }
         super.onPause();
         scrolling = false;
         if (scrimPopupWindow != null) {
@@ -31955,6 +32023,22 @@ public class ChatActivity extends BaseFragment implements
                 items.add(LocaleController.getString(R.string.EditOfferTime));
                 options.add(OPTION_SUGGESTION_EDIT_TIME);
                 icons.add(R.drawable.msg_calendar2);
+            }
+
+            if (selectedObject != null && !suggestEdit && EdgeStore.getInstance(currentAccount).hasEdits(selectedObject.getDialogId(), selectedObject.getId())) {
+                items.add(EdgeConfig.tr("Edit history", "История правок"));
+                options.add(OPTION_MASHA_EDITS);
+                icons.add(R.drawable.msg_edit);
+            }
+            if (selectedObject != null && !suggestEdit && selectedObject.isVoice()) {
+                items.add(EdgeConfig.tr("Transcribe", "Расшифровать"));
+                options.add(OPTION_MASHA_STT);
+                icons.add(R.drawable.msg_text_outlined);
+            }
+            if (selectedObject != null && !suggestEdit) {
+                items.add(EdgeConfig.tr("Message details", "Детали сообщения"));
+                options.add(OPTION_MASHA_DETAILS);
+                icons.add(R.drawable.msg_info);
             }
 
             if (options.isEmpty() && optionsView == null) {
@@ -34293,6 +34377,18 @@ public class ChatActivity extends BaseFragment implements
         }
         boolean preserveDim = false;
         switch (option) {
+            case OPTION_MASHA_EDITS: {
+                EdgeMarks.showEdits(this, selectedObject);
+                break;
+            }
+            case OPTION_MASHA_STT: {
+                EdgeMarks.transcribe(this, selectedObject);
+                break;
+            }
+            case OPTION_MASHA_DETAILS: {
+                EdgeDetails.show(this, selectedObject);
+                break;
+            }
             case OPTION_RETRY: {
                 final MessageObject object = selectedObject;
                 final MessageObject.GroupedMessages group = selectedObjectGroup;
@@ -42545,6 +42641,8 @@ public class ChatActivity extends BaseFragment implements
                 Runnable closeAction = sendSecretMediaDelete(message);
                 cell.invalidate();
                 SecretMediaViewer.getInstance().setParentActivity(getParentActivity());
+                final MessageObject ttlMessage = message;
+                SecretMediaViewer.getInstance().setMashaRead(EdgeConfig.keepTtl() && !message.isOut() ? () -> getMessagesController().edgeMarkTtlRead(ttlMessage) : null);
                 SecretMediaViewer.getInstance().openMedia(message, photoViewerProvider, openAction, closeAction);
             } else if (MessageObject.isAnimatedEmoji(message.getDocument()) && MessageObject.getInputStickerSet(message.getDocument()) != null) {
                 final ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);
@@ -47198,6 +47296,9 @@ public class ChatActivity extends BaseFragment implements
         inputIslandHeightCurrent = calculateInputIslandHeight(false);
         inputIslandHeightTarget = calculateInputIslandHeight(true);
 
+        chatInputViewsContainer.setInputTopExtra((int) (chatActivityEnterView != null
+                ? chatActivityEnterView.getTopViewHeight() * chatActivityEnterView.getTopViewEnterProgress()
+                : 0));
         chatInputViewsContainer.setInputBubbleHeight(inputIslandHeightCurrent);
         updatePagedownButtonsPosition();
         updateBotforumTabsBottomMargin();

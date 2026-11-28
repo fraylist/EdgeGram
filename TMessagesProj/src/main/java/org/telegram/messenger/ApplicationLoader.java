@@ -265,6 +265,9 @@ public class ApplicationLoader extends Application {
 
         ApplicationLoader app = (ApplicationLoader) ApplicationLoader.applicationContext;
         app.initPushServices();
+        if (EdgeConfig.keepAlive()) {
+            EdgeKeepAliveService.start(applicationContext);
+        }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("app initied");
         }
@@ -295,6 +298,7 @@ public class ApplicationLoader extends Application {
         }
 
         super.onCreate();
+        EdgeConfig.applyApiKeys();
 
         // The widget engine's isolated process has no files, network or accounts: none of the client starts there.
         if (org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {

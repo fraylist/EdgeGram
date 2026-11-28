@@ -882,6 +882,31 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         secretDeleteTimer = new SecretDeleteTimer(activity);
         containerView.addView(secretDeleteTimer, LayoutHelper.createFrame(119, 48, Gravity.TOP | Gravity.RIGHT, 0, 0, 0, 0));
 
+        edgeReadButton = new TextView(activity);
+        edgeReadButton.setText(edgeReadLabel());
+        edgeReadButton.setTextColor(0xFFFFFFFF);
+        edgeReadButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+        edgeReadButton.setTypeface(AndroidUtilities.bold());
+        edgeReadButton.setGravity(Gravity.CENTER);
+        edgeReadButton.setPadding(dp(22), 0, dp(22), 0);
+        android.graphics.drawable.GradientDrawable edgeBg = new android.graphics.drawable.GradientDrawable();
+        edgeBg.setColor(0xDD2A7BDE);
+        edgeBg.setCornerRadius(dp(22));
+        edgeReadButton.setBackground(edgeBg);
+        edgeReadButton.setVisibility(View.GONE);
+        edgeReadButton.setOnClickListener(v -> {
+            if (edgeRead == null) {
+                return;
+            }
+            Runnable r = edgeRead;
+            edgeRead = null;
+            r.run();
+            edgeReadButton.setText("\u2713  " + org.telegram.messenger.EdgeConfig.tr("Marked as read", "Отмечено прочитанным"));
+            edgeReadButton.setClickable(false);
+            edgeReadButton.animate().alpha(0f).setStartDelay(1400).setDuration(300).withEndAction(() -> edgeReadButton.setVisibility(View.GONE)).start();
+        });
+        containerView.addView(edgeReadButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 96));
+
         final VideoPlayerSeekBar.SeekBarDelegate seekBarDelegate = new VideoPlayerSeekBar.SeekBarDelegate() {
             @Override
             public void onSeekBarDrag(float progress) {
@@ -965,8 +990,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-        windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
-        AndroidUtilities.logFlagSecure();
+        if (!org.telegram.messenger.EdgeConfig.secretFree()) {
+            windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+            AndroidUtilities.logFlagSecure();
+        }
         centerImage.setParentView(containerView);
         centerImage.setForceCrossfade(true);
 
@@ -1368,6 +1395,16 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private boolean wasLightNavigationBar;
 
     private Runnable onClose;
+    private Runnable edgeRead;
+    private TextView edgeReadButton;
+
+    public void setMashaRead(Runnable r) {
+        this.edgeRead = r;
+    }
+
+    private String edgeReadLabel() {
+        return "\uD83D\uDC41  " + org.telegram.messenger.EdgeConfig.tr("Mark as read", "Прочитано");
+    }
     private boolean ignoreDelete;
 
     public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider, Runnable onOpen, Runnable onClose) {
@@ -1383,6 +1420,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         ignoreDelete = messageObject.messageOwner.ttl == 0x7FFFFFFF;
         this.onClose = onClose;
+        if (edgeReadButton != null) {
+            edgeReadButton.animate().cancel();
+            edgeReadButton.setAlpha(1f);
+            edgeReadButton.setClickable(true);
+            edgeReadButton.setText(edgeReadLabel());
+            edgeReadButton.setVisibility(edgeRead != null ? View.VISIBLE : View.GONE);
+        }
 
         currentProvider = provider;
         openTime = System.currentTimeMillis();

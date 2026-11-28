@@ -1,46 +1,74 @@
-## Telegram messenger for Android
+[Telegram channel](https://t.me/EdgeGramOriginal)
+# EdgeGram
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Клиент Telegram для Android, собранный из открытого кода Telegram for Android 13.2.2 и доработанный: сохранение удалённых сообщений, история правок, режим призрака, одноразовые медиа без автоудаления, расшифровка голосовых и кастомизация интерфейса.
 
-## Creating your Telegram Application
+Обычный Telegram остаётся на месте: чаты, звонки, истории, платежи. Сверху — то, чего в оригинале нет.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+## Возможности
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+**История**
+- Удалённые сообщения остаются в чате с настраиваемой меткой: текст, смайлик, цвет из палитры.
+- История правок: долгое нажатие на изменённое сообщение → «История правок», старое красным, новое зелёным.
+- Полупрозрачные удалённые сообщения.
+- Последний онлайн собеседника, если его статус скрыт.
 
-### API, Protocol documentation
+**Приватность**
+- Не отмечать прочитанным, читать при действиях, скрывать набор текста.
+- Всегда не в сети, тихие истории, отправка без звука.
+- Скрытие своего номера, историй и предложений Premium.
 
-Telegram API manuals: https://core.telegram.org/api
+**Секретные чаты и медиа**
+- Скриншоты, пересылка и сохранение в секретных чатах разрешены, уведомления о скриншотах не отправляются.
+- Одноразовые фото и видео не удаляются; в просмотрщике есть кнопка «Прочитано».
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+**Внешний вид**
+- Время с секундами, отключение сокращения чисел.
+- Размер стикеров с живым превью, скрытие времени на стикерах.
+- Мини-аватарки отправителей, превью медиа в списке чатов.
+- Планшетный режим, скрытие нижней панели вкладок, скрытие клавиатуры при прокрутке.
+- Отключение рекламы, локальный Premium, свои метки.
 
-### Compilation Guide
+**Служебное**
+- До 10 аккаунтов в одном приложении.
+- Расшифровка голосовых в текст (бесплатный ключ Groq или любой OpenAI-совместимый сервис).
+- Встроенный FAQ в приложении.
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+## Как собрать самому
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
+Пошаговая инструкция для новичка, в том числе как собрать без установки чего-либо на компьютер: [HOW_TO_BUILD.md](HOW_TO_BUILD.md).
 
-1. Clone the Telegram source code with its submodules:
-   ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
-   ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
-   ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
-   ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+## Сборка
 
-### Localization
+Требуется JDK 17, Android SDK 36, NDK 27.2.12479018, CMake 3.22.1.
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+```bash
+export JAVA_HOME=/path/to/jdk17
+export ANDROID_HOME=/path/to/android-sdk
+./gradlew :TMessagesProj_App:assembleAfatRelease
+```
+
+Готовый APK: `TMessagesProj_App/build/outputs/apk/afat/release/app.apk`.
+
+Подпись: файл ключа в репозиторий не входит. Перед релизной сборкой положите свой `.keystore` в `TMessagesProj/config/` и укажите путь и пароли в `TMessagesProj_App/build.gradle` и `gradle.properties`. В GitHub Actions ключ подставляется из секретов репозитория.
+
+## Сборка в GitHub Actions
+
+Workflow `.github/workflows/build.yml` собирает arm64 release-APK по кнопке (вкладка Actions → Build APK → Run workflow) и по тегам `v*`.
+
+Секреты, которые нужно добавить в Settings → Secrets and variables → Actions:
+
+| Секрет | Что это |
+|---|---|
+| `KEYSTORE_BASE64` | ваш `.keystore` в base64: `base64 -w0 edgegram.keystore` |
+| `KEYSTORE_PASSWORD` | пароль хранилища |
+| `KEY_ALIAS` | алиас ключа |
+| `KEY_PASSWORD` | пароль ключа |
+
+## Лицензия
+
+GPL-2.0, как и Telegram for Android. Исходный код основан на [Telegram for Android](https://github.com/DrKLO/Telegram); часть идей интерфейса сверена с [Nekogram](https://github.com/Nekogram/Nekogram). Изменения распространяются на тех же условиях.
+
+## Отказ от ответственности
+
+Неофициальный клиент. Не связан с Telegram Messenger LLP. Собирается и ставится вне магазинов приложений, поэтому система может показывать предупреждение об «неизвестном источнике».

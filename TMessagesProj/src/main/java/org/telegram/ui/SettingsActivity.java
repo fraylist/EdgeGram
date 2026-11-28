@@ -74,6 +74,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.EdgeConfig;
+import org.telegram.messenger.EdgeUpdater;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -530,7 +532,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         titleView.setText(UserObject.getUserName(user));
         final StringBuilder sb = new StringBuilder();
         if (user != null) {
-            sb.append(PhoneFormat.getInstance().format("+" + user.phone));
+            sb.append(EdgeConfig.maskPhone(PhoneFormat.getInstance().format("+" + user.phone)));
         }
         final String username = UserObject.getPublicUsername(user);
         if (username != null) {
@@ -804,6 +806,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
+        items.add(SettingCell.Factory.of(30, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_features, "EdgeGram", EdgeConfig.tr("Deleted messages, ghost mode and more", "Удалённые сообщения, режим призрака и другое")));
+        items.add(SettingCell.Factory.of(31, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_features, EdgeConfig.tr("EdgeGram updates", "Обновления EdgeGram"), EdgeConfig.tr("Version ", "Версия ") + org.telegram.messenger.EdgeUpdater.currentVersionCode(getParentActivity())));
 
         items.add(UItem.asShadow(null));
         if (!walletAbove && getMessagesController().config.walletAvailable.get()) {
@@ -944,6 +948,28 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             case 10:
                 presentSettingFragment(new LanguageSelectActivity());
                 break;
+            case 30:
+                presentSettingFragment(new EdgeSettingsActivity(EdgeSettingsActivity.PAGE_MAIN));
+                break;
+            case 31: {
+                final Activity activity = getParentActivity();
+                if (activity == null) {
+                    break;
+                }
+                EdgeUpdater.check(activity, (info, upToDate) -> {
+                    if (activity.isFinishing()) {
+                        return;
+                    }
+                    if (info == null) {
+                        Toast.makeText(activity, EdgeConfig.tr("Could not check for updates", "Не удалось проверить обновления"), Toast.LENGTH_SHORT).show();
+                    } else if (!upToDate) {
+                        EdgeUpdater.showDialog(activity, info);
+                    } else {
+                        Toast.makeText(activity, EdgeConfig.tr("You are on the latest version", "У вас последняя версия"), Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            }
 
             case 11:
                 presentSettingFragment(new PremiumPreviewFragment("settings"));

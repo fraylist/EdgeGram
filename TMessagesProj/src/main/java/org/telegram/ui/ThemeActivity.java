@@ -437,7 +437,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         private SeekBarView sizeBar;
         private int startRadius = 0;
-        private int endRadius = 17;
+        private int endRadius = 30;
 
         private TextPaint textPaint;
 

@@ -14,3 +14,8 @@ TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
 TMessagesProj/jni/ffmpeg/build_android
+# EdgeGram signing key and release artifacts
+TMessagesProj/config/edgegram.keystore
+*.jks
+TMessagesProj_App/build/
+TMessagesProj/build/

@@ -4860,6 +4860,9 @@ public class MessagesStorage extends BaseController {
     }
 
     public void emptyMessagesMedia(long dialogId, ArrayList<Integer> mids) {
+        if (EdgeConfig.keepTtl()) {
+            return;
+        }
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             SQLitePreparedStatement state = null;
@@ -7999,6 +8002,30 @@ public class MessagesStorage extends BaseController {
             checkSQLException(e);
         }
         return result[0];
+    }
+
+    /** Storage queue only: resolves dialog ids of private/group messages by their ids. */
+    public ArrayList<long[]> edgeResolveDialogs(ArrayList<Integer> mids) {
+        ArrayList<long[]> result = new ArrayList<>();
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0", TextUtils.join(",", mids)));
+            while (cursor.next()) {
+                result.add(new long[]{cursor.longValue(0), cursor.intValue(1)});
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return result;
+    }
+
+    /** Storage queue only. */
+    public TLRPC.Message edgeGetMessage(long dialogId, int mid) {
+        return getMessageInternal(dialogId, mid);
     }
 
     public TLRPC.Message getMessage(long dialogId, long msgId) {

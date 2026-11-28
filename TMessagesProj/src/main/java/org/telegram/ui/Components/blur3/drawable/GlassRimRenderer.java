@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.blur3.drawable;
 
+import org.telegram.messenger.EdgeConfig;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -68,6 +70,9 @@ public final class GlassRimRenderer {
     /** Draws the rim of the rounded rect (left, top, right, bottom; radii as in Path#addRoundRect), faded by alpha. */
     public void draw(@NonNull Canvas canvas, float left, float top, float right, float bottom,
                      @NonNull float[] shapeRadii, @NonNull GlassRim rim, float alpha) {
+        if (!EdgeConfig.glassStroke()) {
+            return;
+        }
         final float w = right - left, h = bottom - top;
         if (w < 1 || h < 1 || alpha <= 0) {
             return;

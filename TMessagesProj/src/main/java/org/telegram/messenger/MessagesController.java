@@ -740,6 +740,9 @@ public class MessagesController extends BaseController implements NotificationCe
         return !starsLocked;
     }
     public boolean premiumFeaturesBlocked() {
+        if (EdgeConfig.hidePremium()) {
+            return true;
+        }
         return premiumLocked && !getUserConfig().isPremium();
     }
     public boolean premiumPurchaseBlocked() {
@@ -6672,7 +6675,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
-        if (chat == null) {
+        if (chat == null || EdgeConfig.allowRestricted()) {
             return false;
         }
         if (chat.migrated_to != null) {
@@ -6697,7 +6700,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isUserNoForwards(TLRPC.UserFull userFull) {
-        if (userFull == null) {
+        if (userFull == null || EdgeConfig.allowRestricted()) {
             return false;
         }
 
@@ -14429,6 +14432,89 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    /** Ghost mode "read on action": sends the read receipt for a dialog the user just wrote to. */
+    public void edgeReadDialogNow(long dialogId) {
+        try {
+            if (DialogObject.isEncryptedDialog(dialogId)) {
+                return;
+            }
+            int maxId = 0;
+            ArrayList<MessageObject> list = dialogMessage.get(dialogId);
+            if (list != null && !list.isEmpty()) {
+                maxId = list.get(0).getId();
+            }
+            if (maxId <= 0) {
+                TLRPC.Dialog d = dialogs_dict.get(dialogId);
+                if (d != null) {
+                    maxId = d.top_message;
+                }
+            }
+            if (maxId <= 0) {
+                return;
+            }
+            TLRPC.InputPeer inputPeer = getInputPeer(dialogId);
+            if (inputPeer instanceof TLRPC.TL_inputPeerChannel) {
+                TLRPC.TL_channels_readHistory req = new TLRPC.TL_channels_readHistory();
+                req.channel = getInputChannel(-dialogId);
+                req.max_id = maxId;
+                getConnectionsManager().sendRequest(req, (response, error) -> {
+                });
+            } else if (inputPeer != null) {
+                TLRPC.TL_messages_readHistory req = new TLRPC.TL_messages_readHistory();
+                req.peer = inputPeer;
+                req.max_id = maxId;
+                getConnectionsManager().sendRequest(req, (response, error) -> {
+                    if (error == null && response instanceof TLRPC.TL_messages_affectedMessages) {
+                        TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                        processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                    }
+                });
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    /** Sends only the "content read" receipt, leaving the local copy of the media untouched. */
+    public void edgeMarkTtlRead(MessageObject mo) {
+        if (mo == null || mo.messageOwner == null) {
+            return;
+        }
+        final long dialogId = mo.getDialogId();
+        if (DialogObject.isEncryptedDialog(dialogId)) {
+            TLRPC.EncryptedChat chat = getEncryptedChat(DialogObject.getEncryptedChatId(dialogId));
+            if (chat == null || mo.messageOwner.random_id == 0) {
+                return;
+            }
+            ArrayList<Long> ids = new ArrayList<>();
+            ids.add(mo.messageOwner.random_id);
+            getSecretChatHelper().sendMessagesReadMessage(chat, ids, null);
+        } else if (mo.getId() > 0) {
+            ArrayList<Integer> ids = new ArrayList<>();
+            ids.add(mo.getId());
+            getMessagesStorage().markMessagesContentAsRead(dialogId, ids, 0, 0);
+            if (mo.messageOwner.peer_id != null && mo.messageOwner.peer_id.channel_id != 0) {
+                TLRPC.TL_channels_readMessageContents req = new TLRPC.TL_channels_readMessageContents();
+                req.channel = getInputChannel(mo.messageOwner.peer_id.channel_id);
+                if (req.channel == null) {
+                    return;
+                }
+                req.id.add(mo.getId());
+                getConnectionsManager().sendRequest(req, (response, error) -> {
+                });
+            } else {
+                TLRPC.TL_messages_readMessageContents req = new TLRPC.TL_messages_readMessageContents();
+                req.id.add(mo.getId());
+                getConnectionsManager().sendRequest(req, (response, error) -> {
+                    if (error == null) {
+                        TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                        processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                    }
+                });
+            }
+        }
+    }
+
     public void markMessageContentAsRead(MessageObject messageObject) {
         if (messageObject.scheduled) {
             return;
@@ -17634,6 +17720,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void deleteMessagesByPush(long dialogId, ArrayList<Integer> ids, long channelId) {
+        if (EdgeConfig.keepDeleted()) {
+            getMessagesStorage().getStorageQueue().postRunnable(() -> EdgeStore.getInstance(currentAccount).onServerDeleted(dialogId, ids));
+            return;
+        }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             AndroidUtilities.runOnUIThread(() -> {
                 getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, ids, channelId, false);
@@ -19571,6 +19661,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     message.attachPath = "";
                 }
 
+                if (EdgeConfig.keepEdits()) {
+                    EdgeStore.getInstance(currentAccount).recordEdit(message);
+                }
                 ImageLoader.saveMessageThumbs(message);
                 AndroidUtilities.runOnUIThread(() -> {
                     getSendMessagesHelper().onMessageEdited(message);
@@ -21208,7 +21301,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 for (int a = 0, size = deletedMessagesFinal.size(); a < size; a++) {
                     long dialogId = deletedMessagesFinal.keyAt(a);
                     ArrayList<Integer> arrayList = deletedMessagesFinal.valueAt(a);
-                    if (arrayList == null) {
+                    if (arrayList == null || EdgeConfig.keepDeleted()) {
                         continue;
                     }
                     getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, arrayList, -dialogId, false);
@@ -21329,6 +21422,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 long key = deletedMessages.keyAt(a);
                 ArrayList<Integer> arrayList = deletedMessages.valueAt(a);
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                    if (EdgeConfig.keepDeleted()) {
+                        EdgeStore.getInstance(currentAccount).onServerDeleted(key, arrayList);
+                        return;
+                    }
                     ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(key, arrayList, false, true, 0, 0);
                     getMessagesStorage().updateDialogsWithDeletedMessages(key, -key, arrayList, dialogIds);
                 });
@@ -21727,6 +21824,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
+        if (EdgeConfig.noAds()) {
+            return null;
+        }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
         if (info != null && (info.loading || Math.abs(SystemClock.elapsedRealtime() - info.loadTime) <= 5 * 60 * 1000)) {
             return info;
@@ -23805,6 +23905,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean storiesEnabled() {
+        if (EdgeConfig.hideStories()) {
+            return false;
+        }
         switch (storiesPosting) {
             case "premium":
                 return getUserConfig().isPremium();

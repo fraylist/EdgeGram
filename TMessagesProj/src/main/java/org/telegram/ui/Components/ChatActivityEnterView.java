@@ -2786,7 +2786,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
-        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+        final boolean edgeIosEmoji = org.telegram.messenger.EdgeConfig.iosPanel();
+        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT,
+                edgeIosEmoji ? (Gravity.BOTTOM | Gravity.RIGHT) : (Gravity.BOTTOM | Gravity.LEFT),
+                edgeIosEmoji ? 0 : 2, 0, edgeIosEmoji ? 2 : 0, 0));
         setEmojiButtonImage(false, false);
 
         deleteRichDraftButton = new ImageView(context);
@@ -2871,7 +2874,27 @@ public class ChatActivityEnterView extends FrameLayout implements
             ThemeBind.colorFilter(attachButton, Theme.key_glass_defaultIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             ThemeBind.selectorBackground(attachButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
-            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
+            final boolean edgeIosPanel = org.telegram.messenger.EdgeConfig.iosPanel();
+            if (edgeIosPanel) {
+                android.graphics.drawable.GradientDrawable fieldBg = new android.graphics.drawable.GradientDrawable();
+                fieldBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                fieldBg.setCornerRadius(dp(22));
+                fieldBg.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+                messageEditTextContainer.setBackground(fieldBg);
+                // iOS style: the attach button lives outside the input bubble, on the left
+                android.graphics.drawable.GradientDrawable attachBg = new android.graphics.drawable.GradientDrawable();
+                attachBg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                attachBg.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+                attachButton.setBackground(attachBg);
+                textFieldContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT,
+                        Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+                FrameLayout.LayoutParams fieldParams = (FrameLayout.LayoutParams) messageEditTextContainer.getLayoutParams();
+                fieldParams.leftMargin = dp(DEFAULT_HEIGHT + 4);
+                messageEditTextContainer.setLayoutParams(fieldParams);
+            } else {
+                messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT,
+                        Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 2, 0));
+            }
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
                     return;
@@ -14773,12 +14796,13 @@ public class ChatActivityEnterView extends FrameLayout implements
                 ((MarginLayoutParams) richDraftPreview.getLayoutParams()).leftMargin = dp(54) + width;
             }
         } else {
-            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(3);
+            final boolean edgeIosPanel = org.telegram.messenger.EdgeConfig.iosPanel();
+            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = edgeIosPanel ? 0 : dp(3);
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(3);
             }
             if (messageEditText != null) {
-                ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = dp(50);
+                ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = edgeIosPanel ? dp(10) : dp(50);
             }
             if (richDraftPreview != null) {
                 ((MarginLayoutParams) richDraftPreview.getLayoutParams()).leftMargin = dp(50);

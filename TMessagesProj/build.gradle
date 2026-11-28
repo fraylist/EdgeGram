@@ -1,6 +1,7 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 apply plugin: 'com.android.library'
+def edgeAbis = (project.hasProperty('edgeAbi') ? project.property('edgeAbi') : 'arm64-v8a').toString().split(',')
 apply plugin: 'org.telegram.build-plugin'
 apply plugin: 'idea'
 
@@ -151,6 +152,7 @@ android {
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         multiDexEnabled true
+        ndk { abiFilters(*edgeAbis) }
 
         externalNativeBuild {
             cmake {

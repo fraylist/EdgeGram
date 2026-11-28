@@ -3064,6 +3064,12 @@ public class AndroidUtilities {
     }
 
     public static boolean isTabletForce() {
+        final int mode = EdgeConfig.tabletMode();
+        if (mode == 1) {
+            return true;
+        } else if (mode == 2) {
+            return false;
+        }
         return ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
     }
 
@@ -3137,12 +3143,12 @@ public class AndroidUtilities {
     public static int getPhotoSize(boolean highQuality) {
         if (highQuality) {
             if (highQualityPhotoSize == null) {
-                highQualityPhotoSize = 2560;
+                highQualityPhotoSize = EdgeConfig.hdPhotos() ? 3840 : 2560;
             }
             return highQualityPhotoSize;
         } else {
             if (photoSize == null) {
-                photoSize = 1280;
+                photoSize = EdgeConfig.hdPhotos() ? 2560 : 1280;
             }
             return photoSize;
         }

@@ -3336,6 +3336,10 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     public void showNotifications() {
+        if (EdgeConfig.isAccountSilent(currentAccount)) {
+            hideNotifications();
+            return;
+        }
         notificationsQueue.postRunnable(() -> showOrUpdateNotification(false));
     }
 
@@ -4170,6 +4174,9 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private void showOrUpdateNotification(boolean notifyAboutLast) {
+        if (EdgeConfig.isAccountSilent(currentAccount)) {
+            return;
+        }
         if (!getUserConfig().isClientActivated() || pushMessages.isEmpty() && storyPushMessages.isEmpty() || !SharedConfig.showNotificationsForAllAccounts && currentAccount != UserConfig.selectedAccount) {
             dismissNotification();
             return;

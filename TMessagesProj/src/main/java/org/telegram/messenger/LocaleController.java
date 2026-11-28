@@ -82,6 +82,9 @@ public class LocaleController {
 
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
+        if (EdgeConfig.timeWithSeconds()) {
+            return getFormatterDayWithSeconds();
+        }
         if (formatterDay == null) {
             synchronized (this) {
                 if (formatterDay == null) {
@@ -2890,6 +2893,12 @@ public class LocaleController {
     }
 
     public static String formatShortNumber(int number, int[] rounded) {
+        if (EdgeConfig.noRounding()) {
+            if (rounded != null) {
+                rounded[0] = number;
+            }
+            return String.valueOf(number);
+        }
         StringBuilder K = new StringBuilder();
         int lastDec = 0;
         int KCount = 0;
@@ -2955,6 +2964,15 @@ public class LocaleController {
     }
 
     public static String formatUserStatus(int currentAccount, TLRPC.User user, boolean[] isOnline, boolean[] madeShorter) {
+        if (user != null && user.status != null && user.status.expires > 0 && EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)) {
+            EdgeConfig.rememberLastSeen(user.id, Math.min(user.status.expires, ConnectionsManager.getInstance(currentAccount).getCurrentTime()));
+        }
+        if (user != null && user.status != null && user.status.expires <= 0 && EdgeConfig.get(EdgeConfig.SAVE_LAST_SEEN, true)) {
+            int seen = EdgeConfig.getLastSeen(user.id);
+            if (seen > 0 && !MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
+                return EdgeConfig.tr("approx. ", "примерно ") + formatDateOnline(seen, madeShorter);
+            }
+        }
         if (user != null && user.status != null && user.status.expires == 0) {
             if (user.status instanceof TLRPC.TL_userStatusRecently) {
                 user.status.expires = user.status.by_me ? -1000 : -100;
