@@ -282,6 +282,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
         keyboardView = new CustomPhoneKeyboardView(context);
         keyboardView.setVisibility(isCustomKeyboardVisible() ? View.VISIBLE : View.GONE);
+        applyPinScramble();
         contentView.addView(keyboardView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
 
         switch (type) {
@@ -730,6 +731,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
      */
     private void setCustomKeyboardVisible(boolean visible, boolean animate) {
         if (visible) {
+            applyPinScramble();
             AndroidUtilities.hideKeyboard(fragmentView);
             AndroidUtilities.requestAltFocusable(getParentActivity(), classGuid);
         } else {
@@ -894,7 +896,28 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    /** Shuffled order of digits when the setting is on, otherwise the stock 1..9,0. */
+    private String[] buildDigitOrder() {
+        final String[] order = new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
+        if (!org.telegram.messenger.EdgeConfig.pinScramble()) {
+            return order;
+        }
+        final java.util.ArrayList<String> shuffled = new java.util.ArrayList<>();
+        java.util.Collections.addAll(shuffled, order);
+        java.util.Collections.shuffle(shuffled, new java.util.Random());
+        return shuffled.toArray(new String[0]);
+    }
+
+    /** Re-lays the keypad, but only from the passcode screen: the same keyboard is used for phone login. */
+    private void applyPinScramble() {
+        if (keyboardView == null) {
+            return;
+        }
+        keyboardView.applyDigitOrder(buildDigitOrder());
+    }
+
     private void showKeyboard() {
+        applyPinScramble();
         if (isPinCode()) {
             codeFieldContainer.codeField[0].requestFocus();
             if (!isCustomKeyboardVisible()) {
@@ -1118,6 +1141,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
     private void onPasscodeError() {
         if (getParentActivity() == null) return;
+        if (isPinCode()) {
+            applyPinScramble();
+        }
         try {
             fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignore) {}

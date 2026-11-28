@@ -147,6 +147,7 @@ public class EdgeConfig {
     public static final String KEEP_ALIVE = "keepAlive";
     public static final String SNOWFLAKES = "snowflakes";
     public static final String WAKE_LOCK = "wakeLock";
+    public static final String PIN_SCRAMBLE = "pinScramble";
     public static final String IOS_PANEL = "iosPanel";
     public static final String HIDDEN_PREFIX = "hidden_acc_";
     public static final String DECOY_ACCOUNT = "decoyAccount";
@@ -222,6 +223,9 @@ public class EdgeConfig {
     public static boolean snowflakes() { return get(SNOWFLAKES, false); }
 
     public static boolean wakeLock() { return get(WAKE_LOCK, false); }
+
+    /** Shuffles the digits of the in-app PIN keypad. */
+    public static boolean pinScramble() { return get(PIN_SCRAMBLE, false); }
 
     public static boolean iosPanel() { return get(IOS_PANEL, false); }
 

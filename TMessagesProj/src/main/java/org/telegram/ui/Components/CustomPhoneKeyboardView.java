@@ -109,6 +109,12 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             String num = String.valueOf(i != 10 ? i + 1 : 0);
             views[i] = new NumberButtonView(context, num, symbols);
             views[i].setOnClickListener(v -> {
+                // EdgeGram: the digit comes from the button itself, so a shuffled keypad types
+                // exactly what the user sees
+                final String digit = v instanceof NumberButtonView ? ((NumberButtonView) v).getNumber() : null;
+                if (digit == null) {
+                    return;
+                }
                 checkFindEditText();
                 if (editText == null) return;
 
@@ -120,12 +126,12 @@ public class CustomPhoneKeyboardView extends ViewGroup {
                 }
 
                 Editable text = editText.getText();
-                int newSelection = editText.getSelectionEnd() == editText.length() ? -1 : editText.getSelectionStart() + num.length();
+                int newSelection = editText.getSelectionEnd() == editText.length() ? -1 : editText.getSelectionStart() + digit.length();
                 if (editText.getSelectionStart() != -1 && editText.getSelectionEnd() != -1) {
-                    editText.setText(text.replace(editText.getSelectionStart(), editText.getSelectionEnd(), num));
+                    editText.setText(text.replace(editText.getSelectionStart(), editText.getSelectionEnd(), digit));
                     editText.setSelection(newSelection == -1 ? editText.length() : newSelection);
                 } else {
-                    editText.setText(num);
+                    editText.setText(digit);
                     editText.setSelection(editText.length());
                 }
 
@@ -166,6 +172,24 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             ScaleStateListAnimator.apply(v, 0.02f, 1.2f);
             setButtonBackground(v, a);
         }
+    }
+
+    /** Lays out the given digit order on the number buttons. Does nothing else: the caller decides. */
+    public void applyDigitOrder(String[] order) {
+        if (order == null || order.length < 10) {
+            return;
+        }
+        int k = 0;
+        for (int i = 0; i < views.length && k < 10; i++) {
+            if (i == 9) {
+                continue;
+            }
+            if (views[i] instanceof NumberButtonView) {
+                ((NumberButtonView) views[i]).setNumber(order[k]);
+                k++;
+            }
+        }
+        invalidate();
     }
 
     @Override
@@ -308,14 +332,15 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     private final static class NumberButtonView extends View implements Theme.Colorable {
         private final TextPaint numberTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final TextPaint symbolsTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private final String mNumber;
-        private final String mSymbols;
+        private String mNumber;
+        private String mSymbols;
         private final Rect rect = new Rect();
 
         public NumberButtonView(Context context, String number, String symbols) {
             super(context);
             mNumber = number;
             mSymbols = symbols;
+            setContentDescription(number);
 
             numberTextPaint.setTextSize(dp(24));
             symbolsTextPaint.setTextSize(dp(14));
@@ -332,6 +357,35 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         public void updateColors() {
             applyColors();
             invalidate();
+        }
+
+        String getNumber() {
+            return mNumber;
+        }
+
+        /** Updates the digit, its letters and accessibility in one place: they can never diverge. */
+        void setNumber(String digit) {
+            if (digit == null || digit.isEmpty()) {
+                return;
+            }
+            mNumber = digit;
+            mSymbols = lettersForDigit(digit);
+            setContentDescription(digit);
+            invalidate();
+        }
+
+        private static String lettersForDigit(String digit) {
+            switch (digit) {
+                case "2": return "ABC";
+                case "3": return "DEF";
+                case "4": return "GHI";
+                case "5": return "JKL";
+                case "6": return "MNO";
+                case "7": return "PQRS";
+                case "8": return "TUV";
+                case "9": return "WXYZ";
+                default: return "";
+            }
         }
 
         @Override

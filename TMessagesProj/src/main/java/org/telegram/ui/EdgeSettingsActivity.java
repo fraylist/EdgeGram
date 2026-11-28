@@ -93,6 +93,7 @@ public class EdgeSettingsActivity extends UniversalFragment {
     private static final int ID_UPDATE_URL = 71;
     private static final int ID_LOCK_SEARCH = 72;
     private static final int ID_WAKE_LOCK = 73;
+    private static final int ID_PIN_SCRAMBLE = 74;
     private static final int ID_BACKUP_EXPORT = 47;
     private static final int ID_BACKUP_IMPORT = 48;
     private static final int REQ_BACKUP_EXPORT = 4201;
@@ -647,6 +648,9 @@ public class EdgeSettingsActivity extends UniversalFragment {
         }
         items.add(UItem.asShadow(null));
 
+        items.add(check(ID_PIN_SCRAMBLE, t("Shuffle PIN keypad", "Перемешивать цифры PIN"),
+                t("Digits change places every time the passcode screen opens", "Цифры меняются местами при каждом открытии экрана кода"),
+                org.telegram.messenger.EdgeConfig.pinScramble()));
         items.add(UItem.asHeader(t("Hidden passcode", "Код скрытого режима")));
         items.add(UItem.asButton(ID_DURESS, t("Hidden mode code", "Код скрытого режима"),
                 org.telegram.messenger.EdgeConfig.hasDuressCode() ? t("Set", "Задан") : t("Not set", "Не задан")));
@@ -880,6 +884,11 @@ public class EdgeSettingsActivity extends UniversalFragment {
         if (item.id >= ID_HIDDEN_BASE && item.id < ID_HIDDEN_BASE + org.telegram.messenger.UserConfig.MAX_ACCOUNT_COUNT) {
             final int account = item.id - ID_HIDDEN_BASE;
             org.telegram.messenger.EdgeConfig.setAccountHidden(account, !org.telegram.messenger.EdgeConfig.isAccountHidden(account));
+            refreshViews();
+            return;
+        }
+        if (item.id == ID_PIN_SCRAMBLE) {
+            org.telegram.messenger.EdgeConfig.toggle(org.telegram.messenger.EdgeConfig.PIN_SCRAMBLE, false);
             refreshViews();
             return;
         }
