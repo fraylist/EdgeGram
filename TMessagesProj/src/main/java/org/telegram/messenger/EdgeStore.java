@@ -34,7 +34,7 @@ public class EdgeStore {
 
     private static class Helper extends SQLiteOpenHelper {
         Helper(Context context, int account) {
-            super(context, "edgegram_" + account + ".db", null, 3);
+            super(context, "edgegram_" + account + ".db", null, 4);
         }
 
         @Override
@@ -42,14 +42,20 @@ public class EdgeStore {
             db.execSQL("CREATE TABLE IF NOT EXISTS deleted(uid INTEGER, mid INTEGER, date INTEGER, text TEXT, PRIMARY KEY(uid, mid))");
             db.execSQL("CREATE TABLE IF NOT EXISTS edits(uid INTEGER, mid INTEGER, date INTEGER, old_text TEXT, new_text TEXT)");
             db.execSQL("CREATE INDEX IF NOT EXISTS edits_idx ON edits(uid, mid)");
-            db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER)");
+            db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER, channel INTEGER)");
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            if (oldVersion < 4) {
+                try {
+                    db.execSQL("ALTER TABLE kept_dialogs ADD COLUMN channel INTEGER");
+                } catch (Throwable ignore) {
+                }
+            }
             if (oldVersion < 3) {
                 try {
-                    db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER)");
+                    db.execSQL("CREATE TABLE IF NOT EXISTS kept_dialogs(did INTEGER PRIMARY KEY, date INTEGER, name TEXT, archived INTEGER, folder INTEGER, readonly INTEGER, top INTEGER, channel INTEGER)");
                 } catch (Throwable ignore) {
                 }
             }
@@ -71,6 +77,7 @@ public class EdgeStore {
         public int folder;
         public boolean readOnly;
         public int top;
+        public boolean channel;
     }
 
     private final int account;
@@ -394,8 +401,8 @@ public class EdgeStore {
             return;
         }
         try {
-            db().execSQL("INSERT OR REPLACE INTO kept_dialogs(did, date, name, archived, folder, readonly, top) VALUES(?,?,?,?,?,?,?)",
-                    new Object[]{kept.did, kept.date, kept.name, kept.archived ? 1 : 0, kept.folder, kept.readOnly ? 1 : 0, kept.top});
+            db().execSQL("INSERT OR REPLACE INTO kept_dialogs(did, date, name, archived, folder, readonly, top, channel) VALUES(?,?,?,?,?,?,?,?)",
+                    new Object[]{kept.did, kept.date, kept.name, kept.archived ? 1 : 0, kept.folder, kept.readOnly ? 1 : 0, kept.top, kept.channel ? 1 : 0});
         } catch (Throwable e) {
             FileLog.e(e);
         }
@@ -439,7 +446,7 @@ public class EdgeStore {
         ArrayList<KeptDialog> result = new ArrayList<>();
         try {
             SQLiteDatabase d = db();
-            Cursor c = d.rawQuery("SELECT did, date, name, archived, folder, readonly, top FROM kept_dialogs ORDER BY date DESC", null);
+            Cursor c = d.rawQuery("SELECT did, date, name, archived, folder, readonly, top, channel FROM kept_dialogs ORDER BY date DESC", null);
             while (c.moveToNext()) {
                 KeptDialog kept = new KeptDialog();
                 kept.did = c.getLong(0);
@@ -449,6 +456,7 @@ public class EdgeStore {
                 kept.folder = c.getInt(4);
                 kept.readOnly = c.getInt(5) != 0;
                 kept.top = c.getInt(6);
+                kept.channel = c.getInt(7) != 0;
                 result.add(kept);
             }
             c.close();

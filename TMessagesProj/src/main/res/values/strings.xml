@@ -11679,4 +11679,8 @@
     <string name="FpnvConsentSimSlot">SIM Slot</string>
     <string name="FpnvConsentSimSlotValue">SIM %1$d</string>
     <string name="FpnvConsentPhoneNumber">Phone Number</string>
+    <string name="EdgeKeptChats">Saved chats</string>
+    <string name="EdgeKeptChatsEmpty">Nothing saved yet. Deleted channels and groups you were kicked from will appear here.</string>
+    <string name="EdgeKeptChatsSummary">Saved: %1$d</string>
+    <string name="EdgeKeptDeleteForever">Delete forever</string>
 </resources>

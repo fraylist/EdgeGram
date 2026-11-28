@@ -278,6 +278,8 @@ public class EdgeSettingsActivity extends UniversalFragment {
                 t("Deleted channels and groups stay in the list, history opens read-only",
                         "Удалённые каналы и группы остаются в списке, история открывается только для чтения"),
                 org.telegram.messenger.EdgeConfig.keepDialogs()));
+        items.add(UItem.asButton(ID_KEPT_DIALOGS, t("Saved chats", "Сохранённые чаты"),
+                String.valueOf(org.telegram.messenger.EdgeKeptDialogs.list(currentAccount).size())));
         items.add(check(ID_KEEP_EDITS, t("Keep edit history", "Сохранять историю правок"),
                 t("Long-press an edited message \u2192 \"Edit history\"", "Долгое нажатие на изменённое сообщение \u2192 «История правок»"), EdgeConfig.keepEdits()));
         items.add(UItem.asShadow(null));
@@ -891,6 +893,10 @@ public class EdgeSettingsActivity extends UniversalFragment {
             final int account = item.id - ID_HIDDEN_BASE;
             org.telegram.messenger.EdgeConfig.setAccountHidden(account, !org.telegram.messenger.EdgeConfig.isAccountHidden(account));
             refreshViews();
+            return;
+        }
+        if (item.id == ID_KEPT_DIALOGS) {
+            presentFragment(new EdgeKeptChatsActivity());
             return;
         }
         if (item.id == ID_KEEP_DIALOGS) {

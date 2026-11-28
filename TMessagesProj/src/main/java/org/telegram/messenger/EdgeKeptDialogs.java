@@ -52,7 +52,7 @@ public class EdgeKeptDialogs {
         }
     }
 
-    public static void keep(int account, TLRPC.Dialog dialog, String name) {
+    public static void keep(int account, TLRPC.Dialog dialog, String name, boolean channel) {
         if (dialog == null || dialog.id == 0 || !EdgeConfig.keepDialogs() || dialog.top_message <= 0) {
             return;
         }
@@ -64,6 +64,7 @@ public class EdgeKeptDialogs {
         kept.folder = dialog.folder_id;
         kept.readOnly = true;
         kept.top = dialog.top_message;
+        kept.channel = channel;
         synchronized (cache) {
             map(account).put(kept.did, kept);
         }

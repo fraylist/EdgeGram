@@ -9970,7 +9970,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (title == null || title.trim().isEmpty()) {
                 title = String.valueOf(chat.id);
             }
-            EdgeKeptDialogs.keep(currentAccount, dialog, title);
+            EdgeKeptDialogs.keep(currentAccount, dialog, title, ChatObject.isChannel(chat));
             return;
         }
         deleteDialog(dialog.id, 0);
@@ -22607,8 +22607,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 // dead top_message: nothing to show, do not resurrect an empty dialog
                 continue;
             }
-            final TLRPC.Chat chat = record.did < 0 ? getChat(-record.did) : null;
-            final boolean isChannel = chat != null && ChatObject.isChannel(chat);
+            final boolean isChannel = record.channel;
             final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
             dialog.id = record.did;
             dialog.top_message = record.top;
