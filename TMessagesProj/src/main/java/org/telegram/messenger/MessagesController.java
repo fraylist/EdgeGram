@@ -7629,6 +7629,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void loadFullChat(long chatId, int classGuid, boolean force) {
+        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, -chatId)) {
+            return;
+        }
         long lastLoadedTime = loadedFullChats.get(chatId, 0);
         boolean loaded = lastLoadedTime > 0;
         if (loadingFullChats.contains(chatId) || !force && loaded) {
@@ -11583,6 +11586,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public final static int LOAD_AROUND_DATE = 4;
 
     public void loadMessages(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, boolean fromCache, int midDate, int classGuid, int load_type, int last_message_id, int mode, long threadMessageId, int replyFirstUnread, int loadIndex, boolean isTopic) {
+        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, dialogId)) {
+            // kept dialog: history comes from the local cache only, never from the network
+            return;
+        }
         loadMessages(dialogId, mergeDialogId, loadInfo, count, max_id, offset_date, fromCache, midDate, classGuid, load_type, last_message_id, mode, threadMessageId, loadIndex, threadMessageId != 0 ? replyFirstUnread : 0, 0, 0, false, 0, isTopic);
     }
 
@@ -16747,6 +16754,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void getChannelDifference(long channelId, int newDialogType, long taskId, TLRPC.InputChannel inputChannel) {
+        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, -channelId)) {
+            return;
+        }
         boolean gettingDifferenceChannel = gettingDifferenceChannels.get(channelId, false);
         if (gettingDifferenceChannel) {
             return;

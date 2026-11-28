@@ -884,6 +884,7 @@ public class ChatActivity extends BaseFragment implements
     private boolean forceScrollToTop;
     private boolean scrollToTopUnReadOnResume;
     private long dialog_id;
+    private boolean edgeKeptDialog;
     private Long dialog_id_Long;
     private int lastLoadIndex = 1;
     private SparseArray<MessageObject>[] selectedMessagesIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
@@ -8142,6 +8143,21 @@ public class ChatActivity extends BaseFragment implements
         checkSendButtonBlockedByTyping(false);
 
         chatInputBubbleContainer.addView(chatActivityEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0));
+
+        if (org.telegram.messenger.EdgeConfig.keepDialogs()
+                && org.telegram.messenger.EdgeKeptDialogs.isKept(currentAccount, dialog_id)) {
+            edgeKeptDialog = true;
+            // read-only: no input, no attach, no reactions — the whole panel is gone
+            chatInputBubbleContainer.setVisibility(View.GONE);
+            android.widget.TextView edgeBanner = new android.widget.TextView(context);
+            edgeBanner.setText("Чат удалён. Показаны сохранённые сообщения");
+            edgeBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 13);
+            edgeBanner.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteGrayText));
+            edgeBanner.setGravity(android.view.Gravity.CENTER);
+            edgeBanner.setBackgroundColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundGray));
+            edgeBanner.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
+            contentView.addView(edgeBanner, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.BOTTOM));
+        }
 
         int chatListIndex = contentView.indexOfChild(chatListView);
         chatListIndex = chatListIndex < 0 ? contentView.getChildCount() : (chatListIndex + 1);
