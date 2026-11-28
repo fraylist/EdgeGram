@@ -11586,8 +11586,8 @@ public class MessagesController extends BaseController implements NotificationCe
     public final static int LOAD_AROUND_DATE = 4;
 
     public void loadMessages(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, boolean fromCache, int midDate, int classGuid, int load_type, int last_message_id, int mode, long threadMessageId, int replyFirstUnread, int loadIndex, boolean isTopic) {
-        if (EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, dialogId)) {
-            // kept dialog: history comes from the local cache only, never from the network
+        if (!fromCache && EdgeConfig.keepDialogs() && EdgeKeptDialogs.isKept(currentAccount, dialogId)) {
+            // kept dialog: the local cache still loads, only network requests are blocked
             return;
         }
         loadMessages(dialogId, mergeDialogId, loadInfo, count, max_id, offset_date, fromCache, midDate, classGuid, load_type, last_message_id, mode, threadMessageId, loadIndex, threadMessageId != 0 ? replyFirstUnread : 0, 0, 0, false, 0, isTopic);

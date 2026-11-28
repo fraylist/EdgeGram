@@ -78,6 +78,13 @@ public class EdgeKeptDialogs {
         Utilities.globalQueue.postRunnable(() -> EdgeStore.getInstance(account).unkeepDialog(did));
     }
 
+    public static String getName(int account, long did) {
+        synchronized (cache) {
+            final EdgeStore.KeptDialog kept = map(account).get(did);
+            return kept != null ? kept.name : null;
+        }
+    }
+
     public static ArrayList<EdgeStore.KeptDialog> list(int account) {
         synchronized (cache) {
             return new ArrayList<>(map(account).values());

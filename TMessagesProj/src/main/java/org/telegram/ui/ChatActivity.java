@@ -8157,6 +8157,14 @@ public class ChatActivity extends BaseFragment implements
             edgeBanner.setBackgroundColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundGray));
             edgeBanner.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
             contentView.addView(edgeBanner, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.BOTTOM));
+            // the input container is added later, so keep the banner on top of it
+            edgeBanner.post(() -> contentView.bringChildToFront(edgeBanner));
+            if (currentChat == null) {
+                final String keptName = org.telegram.messenger.EdgeKeptDialogs.getName(currentAccount, dialog_id);
+                if (keptName != null) {
+                    actionBar.setTitle(keptName);
+                }
+            }
         }
 
         int chatListIndex = contentView.indexOfChild(chatListView);
