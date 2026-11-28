@@ -63,10 +63,17 @@ jobs:
         if: steps.check.outputs.new == 'true' && steps.ancestry.outputs.connected == 'true'
         run: |
           git checkout -B "sync/upstream-${{ steps.up.outputs.short }}" main
-          if git merge --no-ff --no-commit upstream/master; then
+          BEFORE=$(git rev-parse HEAD)
+          if git merge --no-ff -m "Sync upstream Telegram @ ${{ steps.up.outputs.short }}" upstream/master; then
+            if [ "$BEFORE" = "$(git rev-parse HEAD)" ]; then
+              echo "::notice::Апстрим уже содержится в main — мержить нечего"
+              echo "merged=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "merged=true" >> "$GITHUB_OUTPUT"
+            fi
             echo "${{ steps.up.outputs.sha }}" > docs/UPSTREAM_BASE.txt
             git add -A
-            git commit -m "Sync upstream Telegram @ ${{ steps.up.outputs.short }}"
+            git diff --cached --quiet || git commit -m "docs: upstream base ${{ steps.up.outputs.short }}"
             echo "conflict=false" >> "$GITHUB_OUTPUT"
           else
             git merge --abort || true
@@ -78,12 +85,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          NEW=$(git rev-list --count main..HEAD)
+          if [ "$NEW" = "0" ]; then
+            echo "Нет изменений — PR не нужен"
+            exit 0
+          fi
           git push origin "HEAD:sync/upstream-${{ steps.up.outputs.short }}"
+          if [ "${{ steps.merge.outputs.merged }}" = "true" ]; then
+            TITLE="Sync upstream: ${{ steps.up.outputs.short }}"
+            BODY="Автоматическое слияние апстрима. Проверь сборку и чек-лист из docs/UPSTREAM.md."
+          else
+            TITLE="Upstream base: ${{ steps.up.outputs.short }}"
+            BODY="Апстрим уже содержится в main, обновлён только docs/UPSTREAM_BASE.txt."
+          fi
           gh pr create \
             --base main \
             --head "sync/upstream-${{ steps.up.outputs.short }}" \
-            --title "Sync upstream: ${{ steps.up.outputs.short }}" \
-            --body "Автоматическое слияние апстрима. Проверь сборку и чек-лист из docs/UPSTREAM.md."
+            --title "$TITLE" \
+            --body "$BODY"
 
       - name: Report conflict
         if: steps.merge.outputs.conflict == 'true'
