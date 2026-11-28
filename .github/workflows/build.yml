@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 240
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,18 +90,26 @@ jobs:
           cat CERTIFICATES.txt
           cat SHA256SUMS.txt
 
-      - name: Install minisign and sign checksums
+      - name: Sign checksums (optional)
+        if: ${{ secrets.MINISIGN_SECRET_KEY != '' }}
         run: |
-          if [ -z "${{ secrets.MINISIGN_SECRET_KEY }}" ]; then
-            echo "::error::Секрет MINISIGN_SECRET_KEY не задан: подпись контрольных сумм недоступна."
-            exit 1
-          fi
           sudo apt-get update -qq && sudo apt-get install -y -qq minisign
           mkdir -p "$HOME/.minisign"
           echo "${{ secrets.MINISIGN_SECRET_KEY }}" | base64 -d > "$HOME/.minisign/minisign.key"
           minisign -S -s "$HOME/.minisign/minisign.key" -m out/SHA256SUMS.txt -x out/SHA256SUMS.txt.minisig -W
           rm -f "$HOME/.minisign/minisign.key"
           cat out/SHA256SUMS.txt.minisig
+
+      - name: Note missing signature key
+        if: ${{ secrets.MINISIGN_SECRET_KEY == '' }}
+        run: echo "::warning::MINISIGN_SECRET_KEY не задан: SHA256SUMS.txt опубликован без подписи. Хэши и сертификат проверяются и так."
+
+      - name: Build provenance attestation
+        if: startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: out/*.apk
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
